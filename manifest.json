@@ -1,0 +1,17 @@
+{
+  "domain": "reef_pi",
+  "name": "Reef PI Integration",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/reef_pi",
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "requirements": [
+    "requests>=2.25.1"
+  ],
+  "dependencies": [],
+  "codeowners": [
+    "@tdragon"
+  ],
+  "iot_class": "local_polling"
+}
