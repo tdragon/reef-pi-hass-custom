@@ -5,15 +5,23 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import (DataUpdateCoordinator,
-                                                      UpdateFailed)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
 from async_timeout import timeout
 
 import json
 
-from .const import (_LOGGER, DOMAIN, HOST, USER, PASSWORD, VERIFY_TLS, UPDATE_INTERVAL_MIN, TIMEOUT_API_SEC)
+from .const import (
+    _LOGGER,
+    DOMAIN,
+    HOST,
+    USER,
+    PASSWORD,
+    VERIFY_TLS,
+    UPDATE_INTERVAL_MIN,
+    TIMEOUT_API_SEC,
+)
 
 from .api import ReefApi, CannotConnect, InvalidAuth
 
@@ -32,9 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up ha_reef_pi from a config entry."""
 
     websession = async_get_clientsession(hass)
-    coordinator = ReefPiDataUpdateCoordinator(
-        hass, websession, entry
-    )
+    coordinator = ReefPiDataUpdateCoordinator(hass, websession, entry)
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -80,7 +86,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Using host %s", config_entry.data[HOST])
         self.username = config_entry.data[USER]
         self.password = config_entry.data[PASSWORD]
-        self.api = ReefApi(config_entry.data[HOST], verify=config_entry.data[VERIFY_TLS])
+        self.api = ReefApi(
+            config_entry.data[HOST], verify=config_entry.data[VERIFY_TLS]
+        )
         self.unique_id = config_entry.data[HOST]
         self.hass = hass
 
@@ -111,18 +119,22 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             sensors = self.api.temperature_sensors()
             if sensors:
                 _LOGGER.debug("temperature updated: %d", len(sensors))
-                return {t["id"]: {
-                    "name": t["name"],
-                    "fahrenheit": t["fahrenheit"],
-                    "temperature": self.api.temperature(t["id"])["temperature"]
-                } for t in sensors}
+                return {
+                    t["id"]: {
+                        "name": t["name"],
+                        "fahrenheit": t["fahrenheit"],
+                        "temperature": self.api.temperature(t["id"])["temperature"],
+                        "attributes": t,
+                    }
+                    for t in sensors
+                }
             return {}
 
         def update_equipment():
             equipment = self.api.equipment()
             if equipment:
                 _LOGGER.debug("equipment updated: %d", len(equipment))
-                return {t["id"]: {"name": t["name"], "on": t["on"]} for t in equipment}
+                return {t["id"]: t for t in equipment}
             return {}
 
         tcs = {}

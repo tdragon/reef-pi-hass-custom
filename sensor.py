@@ -2,13 +2,16 @@
 from homeassistant.const import CONF_NAME, TEMP_CELSIUS, TEMP_FAHRENHEIT
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (_LOGGER, DOMAIN)
+from .const import _LOGGER, DOMAIN
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an temperature entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    sensors = [ReefPiTemperature(id, tcs["name"], coordinator) for id, tcs in coordinator.tcs.items()]
+    sensors = [
+        ReefPiTemperature(id, tcs["name"], coordinator)
+        for id, tcs in coordinator.tcs.items()
+    ]
     async_add_entities(sensors)
     async_add_entities([ReefPiBaicInfo(coordinator)])
 
@@ -20,8 +23,12 @@ class ReefPiBaicInfo(CoordinatorEntity):
         self.api = coordinator
 
     @property
+    def icon(self):
+        return "mdi:fishbowl-outline"
+
+    @property
     def name(self):
-        """Return the name of the sensor """
+        """Return the name of the sensor"""
         if not self.api.info or not "name" in self.api.info:
             return "ReefPiBaicInfo"
         return self.api.info["name"]
@@ -38,7 +45,7 @@ class ReefPiBaicInfo(CoordinatorEntity):
 
     @property
     def available(self):
-        """Return if teperature """
+        """Return if teperature"""
         return self.api.info and "name" in self.api.info
 
     @property
@@ -63,7 +70,7 @@ class ReefPiTemperature(CoordinatorEntity):
 
     @property
     def name(self):
-        """Return the name of the sensor """
+        """Return the name of the sensor"""
         return self._name
 
     @property
@@ -80,10 +87,14 @@ class ReefPiTemperature(CoordinatorEntity):
 
     @property
     def available(self):
-        """Return if teperature """
+        """Return if teperature"""
         return self._id in self.api.tcs.keys()
 
     @property
     def state(self):
         """Return the state of the sensor."""
         return self.api.tcs[self._id]["temperature"]
+
+    @property
+    def device_state_attributes(self):
+        return self.api.tcs[self._id]["attributes"]

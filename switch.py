@@ -3,13 +3,16 @@ from homeassistant.const import CONF_NAME
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.switch import SwitchEntity
 
-from .const import (_LOGGER, DOMAIN)
+from .const import _LOGGER, DOMAIN
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an outlets entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    equipment = [ReefPiSwitch(id, tcs["name"], coordinator) for id, tcs in coordinator.equipment.items()]
+    equipment = [
+        ReefPiSwitch(id, tcs["name"], coordinator)
+        for id, tcs in coordinator.equipment.items()
+    ]
     async_add_entities(equipment)
 
 
@@ -23,7 +26,7 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def name(self):
-        """Return the name of the sensor """
+        """Return the name of the sensor"""
         return self._name
 
     @property
@@ -37,7 +40,7 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def available(self):
-        """Return if teperature """
+        """Return if teperature"""
         return self._id in self.api.equipment.keys()
 
     @property
@@ -54,3 +57,7 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         """Turn the entity on."""
         self.api.equipment_control(self._id, False)
         self.schedule_update_ha_state(True)
+
+    @property
+    def device_state_attributes(self):
+        return {"id": self._id, "outlet": self.api.equipment[self._id]["outlet"]}
