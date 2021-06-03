@@ -1,5 +1,5 @@
 """Platform for reef-pi sensor integration."""
-from homeassistant.const import CONF_NAME, TEMP_CELSIUS
+from homeassistant.const import CONF_NAME, TEMP_CELSIUS, TEMP_FAHRENHEIT
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (_LOGGER, DOMAIN)
@@ -74,6 +74,8 @@ class ReefPiTemperature(CoordinatorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
+        if self.available and self.api.tcs[self._id]["fahrenheit"]:
+            return TEMP_FAHRENHEIT
         return TEMP_CELSIUS
 
     @property

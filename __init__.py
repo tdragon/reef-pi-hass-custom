@@ -111,7 +111,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             sensors = self.api.temperature_sensors()
             if sensors:
                 _LOGGER.debug("temperature updated: %d", len(sensors))
-                return {t["id"]: {"name": t["name"], "temperature": self.api.temperature(t["id"])["temperature"]} for t in sensors}
+                return {t["id"]: {
+                    "name": t["name"],
+                    "fahrenheit": t["fahrenheit"],
+                    "temperature": self.api.temperature(t["id"])["temperature"]
+                } for t in sensors}
             return {}
 
         def update_equipment():
