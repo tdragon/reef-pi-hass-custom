@@ -2,7 +2,7 @@
   "domain": "reef_pi",
   "name": "Reef PI Integration",
   "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/reef_pi",
+  "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
   "ssdp": [],
   "zeroconf": [],
   "homekit": {},
