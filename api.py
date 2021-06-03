@@ -58,17 +58,13 @@ class ReefApi:
             raise CannotConnect
 
     def equipment(self, id=None):
-        result = self._get("equipment")
         if id:
-            return [e for e in result if e["id"] == id]
-        return result
+            return self._get(f"equipment/{id}")
+        return self._get("equipment")
 
     def equipment_control(self, id, on):
-        e = self.equipment(id)
-        if not e:
-            raise ApiError
-        payload = {"on": on, "outlet": e[0]["outlet"], "name": e[0]["name"]}
-        return self._post(f"equipment/{id}", payload)
+        payload = {"on": on}
+        return self._post(f"equipment/{id}/control", payload)
 
     def temperature_sensors(self):
         return self._get("tcs")

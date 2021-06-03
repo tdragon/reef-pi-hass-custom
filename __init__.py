@@ -84,6 +84,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.unique_id = config_entry.data[HOST]
         self.hass = hass
 
+        self.info = {}
         self.tcs = {}
         self.equipment = {}
 
@@ -97,7 +98,14 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         def authenticate():
             if not self.api.is_authenticated():
                 self.api.authenticate(self.username, self.password)
-                _LOGGER.info("authenticated")
+
+        def update_info():
+            info = self.api.info()
+            if info:
+                info["cpu_temperature"] = float(info["cpu_temperature"].split("'")[0])
+                info["model"] = info["model"].rstrip("\0")
+                return info
+            return {}
 
         def update_temperature():
             sensors = self.api.temperature_sensors()
@@ -115,9 +123,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
         tcs = {}
         equipment = {}
+        info = {}
         try:
             async with timeout(TIMEOUT_API_SEC):
                 await self.hass.async_add_executor_job(authenticate)
+                info = await self.hass.async_add_executor_job(update_info)
                 tcs = await self.hass.async_add_executor_job(update_temperature)
                 equipment = await self.hass.async_add_executor_job(update_equipment)
         except InvalidAuth as error:
@@ -127,6 +137,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         finally:
             self.tcs = tcs
             self.equipment = equipment
+            self.info = info
         return {}
 
     def equipment_control(self, id, on):
