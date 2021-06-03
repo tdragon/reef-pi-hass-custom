@@ -13,10 +13,11 @@
                 "data": {
                     "host": "Host",
                     "password": "Password",
-                    "username": "Username"
+                    "username": "Username",
+                    "verify": "Verufy TLS certificate"
                 }
             }
         }
     },
-    "title": "ha_reef_pi"
+    "title": "Reef-PI integration"
 }

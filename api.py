@@ -27,7 +27,7 @@ class ReefApi:
             response = requests.post(url, json=auth, verify=self.verify, timeout=self.timeout)
             if response.ok:
                 self.cookies = {'auth': response.cookies['auth']}
-        except ConnectionError as e:
+        except (ConnectionError, requests.exceptions.SSLError) as e:
             raise CannotConnect
 
         if not response.ok:
