@@ -9,12 +9,13 @@ This custom integration provides a way to sensors data and control equipment con
 ### Manual
 To install this integration manually you have to download the content of this repository to `config/custom_components/reef-pi-hass-custom` directory:
 ```bash
-mkdir -p custom_components/reef-pi-hass-custom
-cd custom_components/reef-pi-hass-custom
+mkdir -p custom_components
+cd custom_components
 wget https://github.com/tdragon/reef-pi-hass-custom/archive/refs/heads/master.zip
 unzip master.zip
 rm master.zip
 ```
+After that rastrt Home Assistant.
 
 ## Configuration
 Install integration from UI (Configuration --> Intergations --> + --> Search for `reef pi`)
