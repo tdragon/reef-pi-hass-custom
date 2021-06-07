@@ -15,6 +15,7 @@ class ReefApi:
 
         if not verify:
             import urllib3
+
             urllib3.disable_warnings()
 
     def is_authenticated(self):
@@ -22,11 +23,13 @@ class ReefApi:
 
     def authenticate(self, user, password):
         try:
-            auth = {'user': user, 'password': password}
+            auth = {"user": user, "password": password}
             url = f"{self.host}/auth/signin"
-            response = requests.post(url, json=auth, verify=self.verify, timeout=self.timeout)
+            response = requests.post(
+                url, json=auth, verify=self.verify, timeout=self.timeout
+            )
             if response.ok:
-                self.cookies = {'auth': response.cookies['auth']}
+                self.cookies = {"auth": response.cookies["auth"]}
         except (ConnectionError, requests.exceptions.SSLError) as e:
             raise CannotConnect
 
@@ -39,12 +42,14 @@ class ReefApi:
 
         try:
             url = f"{self.host}/api/{api}"
-            response = requests.get(url, cookies=self.cookies, verify=self.verify, timeout=self.timeout)
-        except ConnectionError as e:
+            response = requests.get(
+                url, cookies=self.cookies, verify=self.verify, timeout=self.timeout
+            )
+        except ConnectionError:
             raise CannotConnect
 
         if not response.ok:
-            raise InvalidAuth
+            return {}
         return json.loads(response.text)
 
     def _post(self, api, payload) -> dict:
@@ -53,8 +58,15 @@ class ReefApi:
 
         try:
             url = f"{self.host}/api/{api}"
-            response = requests.post(url, json=payload, cookies=self.cookies, verify=self.verify, timeout=self.timeout)
-        except ConnectionError as e:
+            response = requests.post(
+                url,
+                json=payload,
+                cookies=self.cookies,
+                verify=self.verify,
+                timeout=self.timeout,
+            )
+            return response.ok
+        except ConnectionError:
             raise CannotConnect
 
     def equipment(self, id=None):
@@ -91,4 +103,4 @@ class InvalidAuth(HomeAssistantError):
 
 
 class ApiError(HomeAssistantError):
-    """ Unexpected API result """
+    """Unexpected API result"""

@@ -92,6 +92,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.unique_id = config_entry.data[HOST]
         self.hass = hass
 
+        self.has_temperature = False
+        self.has_equipment = False
+
         self.info = {}
         self.tcs = {}
         self.equipment = {}
@@ -108,14 +111,26 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 self.api.authenticate(self.username, self.password)
 
         def update_info():
+            capabilities = self.api.capabilities()
+            if capabilities:
+                self.has_temperature = (
+                    "temperature" in capabilities.keys() and capabilities["temperature"]
+                )
+                self.has_equipment = (
+                    "equipment" in capabilities.keys() and capabilities["equipment"]
+                )
+
             info = self.api.info()
             if info:
                 info["cpu_temperature"] = float(info["cpu_temperature"].split("'")[0])
                 info["model"] = info["model"].rstrip("\0")
+                info["capabilities"] = capabilities
                 return info
             return {}
 
         def update_temperature():
+            if not self.has_temperature:
+                return {}
             sensors = self.api.temperature_sensors()
             if sensors:
                 _LOGGER.debug("temperature updated: %d", len(sensors))
@@ -131,6 +146,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             return {}
 
         def update_equipment():
+            if not self.has_equipment:
+                return {}
             equipment = self.api.equipment()
             if equipment:
                 _LOGGER.debug("equipment updated: %d", len(equipment))
