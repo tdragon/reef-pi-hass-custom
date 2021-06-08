@@ -1,5 +1,6 @@
 [![Community Forum](https://img.shields.io/badge/Community-Forum-41BDF5.svg?style=popout)](https://community.home-assistant.io/t/reef-pi-home-assistant-integration/312945)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+![GitHub All Releases](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/total)
 
 # Home Assistane Reef Pi integration
 
