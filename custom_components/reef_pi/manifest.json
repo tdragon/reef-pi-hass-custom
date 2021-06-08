@@ -1,9 +1,10 @@
 {
   "domain": "reef_pi",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": "Reef PI Integration",
   "config_flow": true,
   "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
+  "issue_tracker": "https://github.com/tdragon/reef-pi-hass-custom/issues",
   "ssdp": [],
   "zeroconf": [],
   "homekit": {},
