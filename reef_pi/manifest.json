@@ -1,5 +1,5 @@
 {
-  "domain": "reef-pi-hass-custom",
+  "domain": "reef_pi",
   "version": "0.1",
   "name": "Reef PI Integration",
   "config_flow": true,
