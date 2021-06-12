@@ -94,7 +94,10 @@ class ReefApi:
         return self._get("phprobes")
 
     def ph(self, id):
-        return self._get(f"phprobes/{id}/readings")["current"][-1]
+        readings = self._get(f"phprobes/{id}/readings")
+        if readings and 'current' in readings.keys():
+            return readings['current'][-1]
+        return {'value': None}
 
 
 class CannotConnect(Exception):

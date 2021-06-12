@@ -7,24 +7,34 @@ REEF_MOCK_USER = "reef_pi"
 REEF_MOCK_PASSWORD = "reef_password"
 
 class ApiMock:
-    def __init__(self, requests_mock, url = REEF_MOCK_URL):
+    def __init__(self, requests_mock, url = REEF_MOCK_URL, has_ph = True):
         self.requests_mock = requests_mock
         self.url = url
         self.requests_mock.post(f'{self.url}/auth/signin', cookies={'auth': 'token'}, status_code=200)
+
+        self.requests_mock.get(f'{self.url}/api/info', json={
+            'name': 'reef-pi',
+            'ip': '192.168.1.123',
+            'current_time': 'Sat Jun 12 22:05:32',
+            'uptime': '1 week ago',
+            'cpu_temperature': "39.0'C\n",
+            'version': '4.1',
+            'model': 'Raspberry Pi 2 Model B Rev 1.1\x00'})
+            
         self.requests_mock.get(f'{self.url}/api/capabilities', json={
             'dev_mode': False,
-            'dashboard': True,
-            'health_check': True,
-            'equipment': True,
-            'timers': True,
+            'dashboard': False,
+            'health_check': False,
+            'equipment': False,
+            'timers': False,
             'lighting': False,
-            'temperature': True,
+            'temperature': False,
             'ato': False,
             'camera': False,
             'doser': False,
-            'ph': True,
+            'ph': has_ph,
             'macro': False,
-            'configuration': True,
+            'configuration': False,
             'journal': False})
 
         self.requests_mock.get(f'{self.url}/api/phprobes', json=[
@@ -50,6 +60,7 @@ class ApiMock:
                  "ymax": 0,
                  "color": "", "unit": ""}}])
 
+        self.requests_mock.get(f'{self.url}/api/phprobes/unknown/readings', status_code=404)
         self.requests_mock.get(f'{self.url}/api/phprobes/6/readings', json={
             "current":[
                 {"value":8.191549295774648,"up":0,"down":15,"time":"Jun-08-02:07, 2021"},
@@ -89,4 +100,3 @@ class ApiMock:
                 {"value":8.24,"up":0,"down":3600,"time":"Mar-07-22:00, 2021"},
                 {"value":8.22,"up":0,"down":3600,"time":"Mar-07-23:00, 2021"}]
         })
-        

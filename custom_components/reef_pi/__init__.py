@@ -154,19 +154,38 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 return {}
             equipment = self.api.equipment()
             if equipment:
-                _LOGGER.debug("equipment updated: %d", len(equipment))
+                _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
                 return {t["id"]: t for t in equipment}
+            return {}
+
+        def update_ph():
+            if not self.has_ph:
+                return {}
+
+            probes = self.api.phprobes()
+            if probes:
+                _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
+                return {
+                    p["id"]: {
+                        "name": p["name"],
+                        "value": self.api.ph(p["id"])["value"],
+                        "attributes": p,
+                    }
+                    for p in probes
+                }
             return {}
 
         tcs = {}
         equipment = {}
         info = {}
+        ph = {}
         try:
             async with timeout(TIMEOUT_API_SEC):
                 await self.hass.async_add_executor_job(authenticate)
                 info = await self.hass.async_add_executor_job(update_info)
                 tcs = await self.hass.async_add_executor_job(update_temperature)
                 equipment = await self.hass.async_add_executor_job(update_equipment)
+                ph = await self.hass.async_add_executor_job(update_ph)
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
@@ -175,6 +194,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             self.tcs = tcs
             self.equipment = equipment
             self.info = info
+            self.ph = ph
         return {}
 
     def equipment_control(self, id, on):

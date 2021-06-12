@@ -37,5 +37,6 @@ def test_ph(reef_pi_instance):
     mock, reef = reef_pi_instance
     reading = reef.ph('6')
     assert 8.194366197183099 == reading['value']
+    assert None == reef.ph('unknown')['value']
 
 
