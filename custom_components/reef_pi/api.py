@@ -3,9 +3,6 @@
 import requests
 import json
 
-from homeassistant.exceptions import HomeAssistantError
-
-
 class ReefApi:
     def __init__(self, host, verify=False, timeout_sec=5):
         self.host = host
@@ -30,8 +27,8 @@ class ReefApi:
             )
             if response.ok:
                 self.cookies = {"auth": response.cookies["auth"]}
-        except (ConnectionError, requests.exceptions.SSLError) as e:
-            raise CannotConnect
+        except (ConnectionError, requests.exceptions.SSLError) as exc:
+            raise CannotConnect from exc
 
         if not response.ok:
             raise InvalidAuth
@@ -45,8 +42,8 @@ class ReefApi:
             response = requests.get(
                 url, cookies=self.cookies, verify=self.verify, timeout=self.timeout
             )
-        except ConnectionError:
-            raise CannotConnect
+        except ConnectionError as exc:
+            raise CannotConnect from exc
 
         if not response.ok:
             return {}
@@ -66,8 +63,8 @@ class ReefApi:
                 timeout=self.timeout,
             )
             return response.ok
-        except ConnectionError:
-            raise CannotConnect
+        except ConnectionError as exc:
+            raise CannotConnect from exc
 
     def equipment(self, id=None):
         if id:
@@ -93,14 +90,20 @@ class ReefApi:
     def info(self):
         return self._get("info")
 
+    def phprobes(self):
+        return self._get("phprobes")
 
-class CannotConnect(HomeAssistantError):
+    def ph(self, id):
+        return self._get(f"phprobes/{id}/readings")["current"][-1]
+
+
+class CannotConnect(Exception):
     """Error to indicate we cannot connect."""
 
 
-class InvalidAuth(HomeAssistantError):
+class InvalidAuth(Exception):
     """Error to indicate there is invalid auth."""
 
 
-class ApiError(HomeAssistantError):
+class ApiError(Exception):
     """Unexpected API result"""

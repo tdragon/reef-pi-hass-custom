@@ -94,6 +94,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.has_temperature = False
         self.has_equipment = False
+        self.has_ph = False
 
         self.info = {}
         self.tcs = {}
@@ -118,6 +119,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 self.has_equipment = (
                     "equipment" in capabilities.keys() and capabilities["equipment"]
+                )
+                self.has_ph = (
+                    "ph" in capabilities.keys() and capabilities["ph"]
                 )
 
             info = self.api.info()
