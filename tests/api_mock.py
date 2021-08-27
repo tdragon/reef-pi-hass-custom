@@ -31,7 +31,7 @@ class ApiMock:
             'temperature': False,
             'ato': False,
             'camera': False,
-            'doser': False,
+            'doser': True,
             'ph': has_ph,
             'macro': False,
             'configuration': False,
@@ -99,4 +99,89 @@ class ApiMock:
                 {"value":8.26,"up":0,"down":3600,"time":"Mar-07-21:00, 2021"},
                 {"value":8.24,"up":0,"down":3600,"time":"Mar-07-22:00, 2021"},
                 {"value":8.22,"up":0,"down":3600,"time":"Mar-07-23:00, 2021"}]
+        })
+
+
+        self.requests_mock.get(f'{self.url}/api/doser/pumps', json=[
+            {"id": "1", "name": "Pump1 sched1", "jack": "1", "pin": 0, "regiment": {"enable": True, "schedule": 
+                    {"day": "*","hour": "19","minute": "30","second": "0","week": "*","month": "*"},
+                    "duration": 15,"speed": 20}},
+            {"id": "2", "name": "Pump1 sched2", "jack": "1", "pin": 0, "regiment": {"enable": True, "schedule": 
+                    {"day": "*","hour": "20","minute": "30","second": "0","week": "*","month": "*"},
+                    "duration": 15,"speed": 20}},
+            {"id": "3", "name": "Pump2 sched1", "jack": "2", "pin": 1, "regiment": {"enable": True, "schedule": 
+                    {"day": "*","hour": "21","minute": "30","second": "0","week": "*","month": "*"},
+                    "duration": 15,"speed": 20}},
+            {"id": "4", "name": "Pump2 sched1", "jack": "2", "pin": 1, "regiment": {"enable": True, "schedule": 
+                    {"day": "*","hour": "22","minute": "30","second": "0","week": "*","month": "*"},
+                    "duration": 15,"speed": 20}}
+        ])
+
+        self.requests_mock.get(f'{self.url}/api/doser/pumps/1/usage', json= {
+            "current": [
+                {"pump":11,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-18-19:30, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-19:30, 2021"},
+                {"pump":15,"time":"Aug-23-19:30, 2021"}],
+            "historical": [
+                {"pump":26,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-19:30, 2021"},
+                {"pump":15,"time":"Aug-23-19:30, 2021"}]
+        })
+
+        self.requests_mock.get(f'{self.url}/api/doser/pumps/2/usage', json= {
+            "current": [
+                {"pump":11,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-18-19:30, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-19:30, 2021"},
+                {"pump":15,"time":"Aug-23-20:30, 2021"}],
+            "historical": [
+                {"pump":26,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-21:30, 2021"}]
+        })
+
+        self.requests_mock.get(f'{self.url}/api/doser/pumps/3/usage', json= {
+            "current": [
+                {"pump":11,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-18-19:30, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-23-21:30, 2021"}],
+            "historical": [
+                {"pump":26,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-19:30, 2021"},
+                {"pump":15,"time":"Aug-23-22:30, 2021"}]
+        })
+
+        self.requests_mock.get(f'{self.url}/api/doser/pumps/4/usage', json= {
+            "current": [
+                {"pump":11,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-18-19:30, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-23:30, 2021"}],
+            "historical": [
+                {"pump":26,"time":"Aug-18-14:05, 2021"},
+                {"pump":15,"time":"Aug-19-19:30, 2021"},
+                {"pump":15,"time":"Aug-20-19:30, 2021"},
+                {"pump":15,"time":"Aug-21-19:30, 2021"},
+                {"pump":15,"time":"Aug-22-19:30, 2021"},
+                {"pump":15,"time":"Aug-23-19:30, 2021"}]
         })
