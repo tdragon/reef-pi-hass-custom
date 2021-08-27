@@ -99,6 +99,15 @@ class ReefApi:
             return readings['current'][-1]
         return {'value': None}
 
+    def pumps(self):
+        return self._get("doser/pumps")
+
+    def pump(self, id):
+        readings = self._get(f"doser/pumps/{id}/usage")
+        if readings and "current" in readings.keys():
+            return readings['current'][-1]
+        return None
+
 
 class CannotConnect(Exception):
     """Error to indicate we cannot connect."""
