@@ -11,6 +11,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from async_timeout import timeout
 
 import json
+from datetime import datetime
 
 from .const import (
     _LOGGER,
@@ -28,6 +29,8 @@ from .api import ReefApi, CannotConnect, InvalidAuth
 # TODO List the platforms that you want to support.
 # For your initial PR, limit it to 1 platform.
 PLATFORMS = ["sensor", "switch"]
+
+REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
@@ -95,10 +98,13 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.has_temperature = False
         self.has_equipment = False
         self.has_ph = False
+        self.has_pumps = False
 
         self.info = {}
         self.tcs = {}
         self.equipment = {}
+        self.ph = {}
+        self.pumps = {}
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL_MIN
@@ -122,6 +128,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 self.has_ph = (
                     "ph" in capabilities.keys() and capabilities["ph"]
+                )
+                self.has_pumps = (
+                    "doser" in capabilities.keys() and capabilities["doser"]
                 )
 
             info = self.api.info()
@@ -175,10 +184,42 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 }
             return {}
 
+        def update_pumps():
+            if not self.has_pumps:
+                return {}
+
+            result = {}
+            try:
+                pumps = self.api.pumps()
+
+                for pump in pumps:
+                    key = f"{pump['jack']}_{pump['pin']}"
+                    _LOGGER.debug("Pump %s: %s", key, json.dumps(pump))
+                    if key not in result.keys():
+                        result[key] = {
+                            "name": pump['name'],
+                            "time": datetime.fromtimestamp(0),
+                            "attributes": {
+                                pump['id']: pump
+                            }}
+                    else:
+                        result[key]['attributes'][pump['id']] = pump
+
+                    current = self.api.pump(pump['id'])
+                    if current and "time" in current.keys() and "pump" in current.keys():
+                        time = datetime.strptime(current['time'], REEFPI_DATETIME_FORMAT)
+                        if time > result[key]['time']:
+                            result[key]['time'] = time
+                            result[key]['attributes']['duration'] = current['pump']
+            except Exception as ex:
+                _LOGGER.exception(ex)
+            return result
+
         tcs = {}
         equipment = {}
         info = {}
         ph = {}
+        pumps = {}
         try:
             async with timeout(TIMEOUT_API_SEC):
                 await self.hass.async_add_executor_job(authenticate)
@@ -186,6 +227,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 tcs = await self.hass.async_add_executor_job(update_temperature)
                 equipment = await self.hass.async_add_executor_job(update_equipment)
                 ph = await self.hass.async_add_executor_job(update_ph)
+                pumps = await self.hass.async_add_executor_job(update_pumps)
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
@@ -195,6 +237,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             self.equipment = equipment
             self.info = info
             self.ph = ph
+            self.pumps = pumps
         return {}
 
     def equipment_control(self, id, on):
