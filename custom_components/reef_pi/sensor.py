@@ -11,6 +11,7 @@ from homeassistant.helpers.typing import StateType
 
 from .const import _LOGGER, DOMAIN
 
+from datetime import datetime
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an temperature entity from a config_entry."""
@@ -24,10 +25,15 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         ReefPiPh(id, base_name + ph["name"], coordinator)
         for id, ph in coordinator.ph.items()
     ]
+    pumps = [
+        ReefPiPump(id, base_name + "pump_" + id, coordinator)
+        for id, pump in coordinator.pumps.items()
+    ]
     _LOGGER.debug("sensor base name: %s, temperature: %d, pH: %d", base_name, len(sensors), len(ph_sensors))
     async_add_entities(sensors)
     async_add_entities(ph_sensors)
     async_add_entities([ReefPiBaicInfo(coordinator)])
+    async_add_entities(pumps)
 
 
 class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
@@ -154,3 +160,38 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     @property
     def device_state_attributes(self):
         return self.api.ph[self._id]["attributes"]
+
+class ReefPiPump(CoordinatorEntity):
+    def __init__(self, id, name, coordinator):
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._id = id
+        self._name = name
+        self.api = coordinator
+
+    @property
+    def name(self):
+        """Return the name of the sensor"""
+        return self._name
+
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_TIMESTAMP
+
+    @property
+    def unique_id(self):
+        """Return a unique_id for this entity."""
+        return f"{self.coordinator.unique_id}_pump_{self._id}"
+
+    @property
+    def available(self):
+        """Return if teperature"""
+        return self._id in self.api.pumps.keys() and self.api.pumps[self._id]["time"] != datetime.fromtimestamp(0)
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self.api.pumps[self._id]["time"].isoformat()
+
+    @property
+    def device_state_attributes(self):
+        return self.api.pumps[self._id]["attributes"]
