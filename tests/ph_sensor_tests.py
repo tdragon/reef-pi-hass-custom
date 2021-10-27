@@ -21,4 +21,4 @@ async def test_ph(hass, requests_mock):
     state = hass.states.get("sensor.reef_pi_ph")
     assert state
     assert state.state == '8.1943661971831'
-    assert state.name == 'reef-pi_pH'
+    assert state.name == 'reef-pi: pH'

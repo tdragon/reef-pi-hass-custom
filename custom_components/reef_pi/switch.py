@@ -9,7 +9,7 @@ from .const import _LOGGER, DOMAIN
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an outlets entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    base_name = coordinator.info["name"] + "_"
+    base_name = coordinator.info["name"] + ": "
     equipment = [
         ReefPiSwitch(id, base_name + tcs["name"], coordinator)
         for id, tcs in coordinator.equipment.items()
