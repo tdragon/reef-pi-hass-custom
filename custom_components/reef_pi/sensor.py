@@ -113,7 +113,7 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self):
-        """Return if teperature"""
+        """Return if available"""
         return self._id in self.api.tcs.keys()
 
     @property
@@ -150,7 +150,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self):
-        """Return if teperature"""
+        """Return if available"""
         return self._id in self.api.ph.keys()
 
     @property
@@ -162,7 +162,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     def device_state_attributes(self):
         return self.api.ph[self._id]["attributes"]
 
-class ReefPiPump(CoordinatorEntity):
+class ReefPiPump(CoordinatorEntity, SensorEntity):
     def __init__(self, id, name, coordinator):
         """Initialize the sensor."""
         super().__init__(coordinator)
@@ -186,8 +186,9 @@ class ReefPiPump(CoordinatorEntity):
 
     @property
     def available(self):
-        """Return if teperature"""
+        """Return if available"""
         return self._id in self.api.pumps.keys() and self.api.pumps[self._id]["time"] != datetime.fromtimestamp(0)
+
     @property
     def state(self):
         """Return the state of the sensor."""
