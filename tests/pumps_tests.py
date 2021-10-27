@@ -21,7 +21,7 @@ async def test_pump1(hass, requests_mock):
     state = hass.states.get("sensor.reef_pi_pump_1_0")
     assert state
     assert state.state == '2021-08-23T20:30:00'
-    assert state.name == 'reef-pi_pump_1_0'
+    assert state.name == 'reef-pi: pump_1_0'
 
 
 async def test_pump2(hass, requests_mock):
@@ -40,4 +40,4 @@ async def test_pump2(hass, requests_mock):
     state = hass.states.get("sensor.reef_pi_pump_2_1")
     assert state
     assert state.state == '2021-08-23T21:30:00'
-    assert state.name == 'reef-pi_pump_2_1'
+    assert state.name == 'reef-pi: pump_2_1'

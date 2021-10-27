@@ -1,6 +1,6 @@
 {
   "domain": "reef_pi",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "name": "Reef PI Integration",
   "config_flow": true,
   "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
@@ -9,7 +9,7 @@
   "zeroconf": [],
   "homekit": {},
   "requirements": [
-    "requests>=2.25.1"
+    "requests>=2.26.0"
   ],
   "dependencies": [],
   "codeowners": [
