@@ -26,6 +26,14 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         self.api = coordinator
 
     @property
+    def device_info(self):
+        return {
+            'identifiers': {
+                (DOMAIN, self.coordinator.unique_id)
+            }}
+
+
+    @property
     def name(self):
         """Return the name of the sensor"""
         return self._name

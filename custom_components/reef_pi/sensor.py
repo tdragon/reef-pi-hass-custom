@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.typing import StateType
 
-from .const import _LOGGER, DOMAIN
+from .const import _LOGGER, DOMAIN, MANUFACTURER
 
 from datetime import datetime
 
@@ -48,6 +48,23 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
     @property
     def device_class(self):
         return DEVICE_CLASS_TEMPERATURE
+
+    @property
+    def device_info(self):
+        info = {
+            'identifiers': {
+                (DOMAIN, self.coordinator.unique_id)
+            },
+            'default_name': "Reef PI",
+            'default_manufacturer': MANUFACTURER,
+            "default_model" : "Reef PI",
+            "configuration_url": self.api.configuration_url
+        }
+        if self.api.info:
+            info['model'] = self.api.info["model"]
+            info['sw_version'] = self.api.info["version"]
+            info['name'] = self.name
+        return info
 
     @property
     def icon(self):
@@ -95,6 +112,13 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
         return DEVICE_CLASS_TEMPERATURE
 
     @property
+    def device_info(self):
+        return {
+            'identifiers': {
+                (DOMAIN, self.coordinator.unique_id)
+            }}
+
+    @property
     def name(self):
         """Return the name of the sensor"""
         return self._name
@@ -134,6 +158,14 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
         self.api = coordinator
 
     @property
+    def device_info(self):
+        return {
+            'identifiers': {
+                (DOMAIN, self.coordinator.unique_id)
+            }}
+
+
+    @property
     def name(self):
         """Return the name of the sensor"""
         return self._name
@@ -169,6 +201,14 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         self._id = id
         self._name = name
         self.api = coordinator
+
+    @property
+    def device_info(self):
+        return {
+            'identifiers': {
+                (DOMAIN, self.coordinator.unique_id)
+            }}
+
 
     @property
     def name(self):

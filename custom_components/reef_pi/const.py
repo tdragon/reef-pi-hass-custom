@@ -4,6 +4,7 @@ import logging
 from datetime import timedelta
 
 DOMAIN = "reef_pi"
+MANUFACTURER = "reef-pi.github.io"
 
 HOST = "host"
 USER = "username"
