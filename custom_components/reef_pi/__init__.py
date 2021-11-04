@@ -92,6 +92,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.api = ReefApi(
             config_entry.data[HOST], verify=config_entry.data[VERIFY_TLS]
         )
+        self.configuration_url = config_entry.data[HOST]
         self.unique_id = config_entry.data[HOST]
         self.hass = hass
 
