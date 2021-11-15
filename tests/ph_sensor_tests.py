@@ -22,3 +22,24 @@ async def test_ph(hass, requests_mock):
     assert state
     assert state.state == '8.1943661971831'
     assert state.name == 'reef-pi: pH'
+
+async def test_ph_without_current(hass, requests_mock):
+    mock = api_mock.ApiMock(requests_mock)
+
+    entry = MockConfigEntry(domain=DOMAIN, data={
+        "host": api_mock.REEF_MOCK_URL,
+        "username": api_mock.REEF_MOCK_USER,
+        "password": api_mock.REEF_MOCK_PASSWORD,
+        "verify": False})
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.reef_pi_ph_no_current")
+    assert state
+    assert state.state == '5.1'
+
+    state = hass.states.get("sensor.reef_pi_ph_no_history")
+    assert state
+    assert state.state == 'unavailable'

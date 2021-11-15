@@ -95,8 +95,10 @@ class ReefApi:
 
     def ph(self, id):
         readings = self._get(f"phprobes/{id}/readings")
-        if readings and 'current' in readings.keys():
+        if readings and 'current' in readings.keys() and len(readings['current']):
             return readings['current'][-1]
+        if readings and 'historical' in readings.keys() and len(readings['historical']):
+            return readings['historical'][-1]
         return {'value': None}
 
     def pumps(self):
@@ -104,8 +106,10 @@ class ReefApi:
 
     def pump(self, id):
         readings = self._get(f"doser/pumps/{id}/usage")
-        if readings and "current" in readings.keys():
+        if readings and "current" in readings.keys() and len(readings['current']):
             return readings['current'][-1]
+        if readings and "historical" in readings.keys() and len(readings['historical']):
+            return readings['historical'][-1]
         return None
 
 

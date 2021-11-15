@@ -164,6 +164,9 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
                 (DOMAIN, self.coordinator.unique_id)
             }}
 
+    @property
+    def icon(self):
+        return "mdi:ph"
 
     @property
     def name(self):
@@ -183,7 +186,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     @property
     def available(self):
         """Return if available"""
-        return self._id in self.api.ph.keys()
+        return self._id in self.api.ph.keys() and self.api.ph[self._id]["value"]
 
     @property
     def state(self):

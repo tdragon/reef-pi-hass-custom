@@ -41,3 +41,38 @@ async def test_pump2(hass, requests_mock):
     assert state
     assert state.state == '2021-08-23T21:30:00'
     assert state.name == 'reef-pi: pump_2_1'
+
+async def test_pump_no_current(hass, requests_mock):
+    mock = api_mock.ApiMock(requests_mock)
+
+    entry = MockConfigEntry(domain=DOMAIN, data={
+        "host": api_mock.REEF_MOCK_URL,
+        "username": api_mock.REEF_MOCK_USER,
+        "password": api_mock.REEF_MOCK_PASSWORD,
+        "verify": False})
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.reef_pi_pump_2_2")
+    assert state
+    assert state.state == '2021-08-23T19:30:00'
+    assert state.name == 'reef-pi: pump_2_2'
+
+
+async def test_pump_no_history(hass, requests_mock):
+    mock = api_mock.ApiMock(requests_mock)
+
+    entry = MockConfigEntry(domain=DOMAIN, data={
+        "host": api_mock.REEF_MOCK_URL,
+        "username": api_mock.REEF_MOCK_USER,
+        "password": api_mock.REEF_MOCK_PASSWORD,
+        "verify": False})
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.reef_pi_pump_3_0")
+    assert state.state == "unavailable"

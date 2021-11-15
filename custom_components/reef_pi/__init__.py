@@ -192,7 +192,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             result = {}
             try:
                 pumps = self.api.pumps()
-
                 for pump in pumps:
                     key = f"{pump['jack']}_{pump['pin']}"
                     _LOGGER.debug("Pump %s: %s", key, json.dumps(pump))

@@ -58,7 +58,15 @@ class ApiMock:
              "chart": {
                  "ymin": 0,
                  "ymax": 0,
-                 "color": "", "unit": ""}}])
+                 "color": "", "unit": ""}},
+            {"id": "7",
+             "name": "pH No current",
+             "enable": True,
+            }, 
+            {"id": "8",
+             "name": "pH No history",
+             "enable": True,
+            }])
 
         self.requests_mock.get(f'{self.url}/api/phprobes/unknown/readings', status_code=404)
         self.requests_mock.get(f'{self.url}/api/phprobes/6/readings', json={
@@ -101,6 +109,12 @@ class ApiMock:
                 {"value":8.22,"up":0,"down":3600,"time":"Mar-07-23:00, 2021"}]
         })
 
+        self.requests_mock.get(f'{self.url}/api/phprobes/7/readings', json={
+            "historical":[
+                {"value":4.0,"up":0,"down":15,"time":"Jun-08-02:07, 2021"},
+                {"value":5.1,"up":0,"down":15,"time":"Jun-08-02:08, 2021"}]})
+
+        self.requests_mock.get(f'{self.url}/api/phprobes/8/readings', json={})
 
         self.requests_mock.get(f'{self.url}/api/doser/pumps', json=[
             {"id": "1", "name": "Pump1 sched1", "jack": "1", "pin": 0, "regiment": {"enable": True, "schedule": 
@@ -112,7 +126,10 @@ class ApiMock:
             {"id": "3", "name": "Pump2 sched1", "jack": "2", "pin": 1, "regiment": {"enable": True, "schedule": 
                     {"day": "*","hour": "21","minute": "30","second": "0","week": "*","month": "*"},
                     "duration": 15,"speed": 20}},
-            {"id": "4", "name": "Pump2 sched1", "jack": "2", "pin": 1, "regiment": {"enable": True, "schedule": 
+            {"id": "4", "name": "Pump2 sched1", "jack": "2", "pin": 2, "regiment": {"enable": True, "schedule": 
+                    {"day": "*","hour": "22","minute": "30","second": "0","week": "*","month": "*"},
+                    "duration": 15,"speed": 20}},
+            {"id": "5", "name": "No history", "jack": "3", "pin": 0, "regiment": {"enable": True, "schedule": 
                     {"day": "*","hour": "22","minute": "30","second": "0","week": "*","month": "*"},
                     "duration": 15,"speed": 20}}
         ])
@@ -170,13 +187,6 @@ class ApiMock:
         })
 
         self.requests_mock.get(f'{self.url}/api/doser/pumps/4/usage', json= {
-            "current": [
-                {"pump":11,"time":"Aug-18-14:05, 2021"},
-                {"pump":15,"time":"Aug-18-19:30, 2021"},
-                {"pump":15,"time":"Aug-19-19:30, 2021"},
-                {"pump":15,"time":"Aug-20-19:30, 2021"},
-                {"pump":15,"time":"Aug-21-19:30, 2021"},
-                {"pump":15,"time":"Aug-22-23:30, 2021"}],
             "historical": [
                 {"pump":26,"time":"Aug-18-14:05, 2021"},
                 {"pump":15,"time":"Aug-19-19:30, 2021"},
@@ -184,4 +194,7 @@ class ApiMock:
                 {"pump":15,"time":"Aug-21-19:30, 2021"},
                 {"pump":15,"time":"Aug-22-19:30, 2021"},
                 {"pump":15,"time":"Aug-23-19:30, 2021"}]
+        })
+
+        self.requests_mock.get(f'{self.url}/api/doser/pumps/5/usage', json= {
         })
