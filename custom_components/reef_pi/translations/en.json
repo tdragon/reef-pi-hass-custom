@@ -14,7 +14,7 @@
                     "host": "Host",
                     "password": "Password",
                     "username": "Username",
-                    "verify": "Verufy TLS certificate"
+                    "verify": "Verify TLS certificate"
                 }
             }
         }

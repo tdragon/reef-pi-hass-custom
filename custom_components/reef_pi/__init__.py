@@ -86,7 +86,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, session, config_entry):
         """Initialize."""
 
-        _LOGGER.debug("Using host %s", config_entry.data[HOST])
+        _LOGGER.debug("Using host %s for %s", config_entry.data[HOST], config_entry.title)
+        self.default_name = config_entry.title
         self.username = config_entry.data[USER]
         self.password = config_entry.data[PASSWORD]
         self.api = ReefApi(
@@ -116,9 +117,12 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
         def authenticate():
             if not self.api.is_authenticated():
+                _LOGGER.debug("Authenticating")
                 self.api.authenticate(self.username, self.password)
+                _LOGGER.debug("Authenticated")
 
         def update_info():
+            _LOGGER.debug("Fetching info")
             capabilities = self.api.capabilities()
             if capabilities:
                 self.has_temperature = (
@@ -133,12 +137,14 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 self.has_pumps = (
                     "doser" in capabilities.keys() and capabilities["doser"]
                 )
+                _LOGGER.debug("Capabilities: ok")
 
             info = self.api.info()
             if info:
                 info["cpu_temperature"] = float(info["cpu_temperature"].split("'")[0])
                 info["model"] = info["model"].rstrip("\0")
                 info["capabilities"] = capabilities
+                _LOGGER.debug("Basic info: ok")
                 return info
             return {}
 

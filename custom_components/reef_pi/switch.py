@@ -53,6 +53,13 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         return self._id in self.api.equipment.keys()
 
     @property
+    def icon(self):
+        if self.available:
+            return "mdi:power-plug" if self.is_on else "mdi:power-plug-off"
+        else:
+            return "mdi:exclamation"
+
+    @property
     def is_on(self):
         """Return the state of the sensor."""
         return self.api.equipment[self._id]["on"]

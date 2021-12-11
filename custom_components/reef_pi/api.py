@@ -4,7 +4,7 @@ import requests
 import json
 
 class ReefApi:
-    def __init__(self, host, verify=False, timeout_sec=5):
+    def __init__(self, host, verify=False, timeout_sec=15):
         self.host = host
         self.verify = verify
         self.cookies = {}

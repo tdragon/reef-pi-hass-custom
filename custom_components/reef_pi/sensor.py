@@ -55,7 +55,7 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
             'identifiers': {
                 (DOMAIN, self.coordinator.unique_id)
             },
-            'default_name': "Reef PI",
+            'default_name': self.api.default_name,
             'default_manufacturer': MANUFACTURER,
             "default_model" : "Reef PI",
             "configuration_url": self.api.configuration_url
