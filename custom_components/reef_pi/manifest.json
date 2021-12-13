@@ -1,6 +1,6 @@
 {
   "domain": "reef_pi",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "name": "Reef PI Integration",
   "config_flow": true,
   "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
