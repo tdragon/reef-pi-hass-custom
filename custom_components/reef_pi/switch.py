@@ -2,6 +2,8 @@
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchDeviceClass
+
 
 from .const import _LOGGER, DOMAIN
 
@@ -25,6 +27,8 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         self._name = name
         self.api = coordinator
 
+    _attr_device_class = SwitchDeviceClass.OUTLET
+
     @property
     def device_info(self):
         return {
@@ -42,10 +46,6 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
     def unique_id(self):
         """Return a unique_id for this entity."""
         return f"{self.coordinator.unique_id}_switch_{self._id}"
-
-    @property
-    def device_class(self):
-        return "outlet"
 
     @property
     def available(self):
@@ -75,5 +75,5 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         self.schedule_update_ha_state(True)
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         return {"id": self._id, "outlet": self.api.equipment[self._id]["outlet"]}

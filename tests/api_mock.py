@@ -25,7 +25,7 @@ class ApiMock:
             'dev_mode': False,
             'dashboard': False,
             'health_check': False,
-            'equipment': False,
+            'equipment': True,
             'timers': False,
             'lighting': False,
             'temperature': False,
@@ -198,3 +198,13 @@ class ApiMock:
 
         self.requests_mock.get(f'{self.url}/api/doser/pumps/5/usage', json= {
         })
+
+        self.requests_mock.get(f'{self.url}/api/equipment', json = 
+            [
+                {"id": "1", "name": "Old light", "outlet": "1", "on": True, "stay_off_on_boot": False}, 
+                {"id": "17", "name": "Led light 1", "outlet": "17", "on": False, "stay_off_on_boot": False}, 
+                {"id": "18", "name": "Led light 2", "outlet": "18", "on": True, "stay_off_on_boot": False}, 
+                {"id": "19", "name": "CO2", "outlet": "19", "on": True, "stay_off_on_boot": False}, 
+                {"id": "20", "name": "Heater", "outlet": "20", "on": False, "stay_off_on_boot": False}, 
+                {"id": "21", "name": "Cooler", "outlet": "21", "on": False, "stay_off_on_boot": False}]
+        )

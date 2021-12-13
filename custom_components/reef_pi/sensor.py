@@ -2,9 +2,9 @@
 from homeassistant.const import (
     TEMP_CELSIUS,
     TEMP_FAHRENHEIT,
-    DEGREE,
-    DEVICE_CLASS_TEMPERATURE,
-    DEVICE_CLASS_TIMESTAMP)
+    DEGREE)
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
@@ -45,9 +45,8 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self.api = coordinator
 
-    @property
-    def device_class(self):
-        return DEVICE_CLASS_TEMPERATURE
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def device_info(self):
@@ -93,7 +92,7 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
         return self.api.info["cpu_temperature"]
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         if self.api.info:
             return self.api.info
         return {}
@@ -107,9 +106,8 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
         self._name = name
         self.api = coordinator
 
-    @property
-    def device_class(self):
-        return DEVICE_CLASS_TEMPERATURE
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def device_info(self):
@@ -146,7 +144,7 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
         return self.api.tcs[self._id]["temperature"]
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         return self.api.tcs[self._id]["attributes"]
 
 class ReefPiPh(CoordinatorEntity, SensorEntity):
@@ -194,7 +192,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
         return self.api.ph[self._id]["value"]
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         return self.api.ph[self._id]["attributes"]
 
 class ReefPiPump(CoordinatorEntity, SensorEntity):
@@ -205,6 +203,8 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         self._name = name
         self.api = coordinator
 
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
     @property
     def device_info(self):
         return {
@@ -212,15 +212,10 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
                 (DOMAIN, self.coordinator.unique_id)
             }}
 
-
     @property
     def name(self):
         """Return the name of the sensor"""
         return self._name
-
-    @property
-    def device_class(self):
-        return DEVICE_CLASS_TIMESTAMP
 
     @property
     def unique_id(self):
@@ -238,5 +233,5 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         return self.api.pumps[self._id]["time"].isoformat()
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         return self.api.pumps[self._id]["attributes"]
