@@ -1,43 +1,34 @@
+from http.cookiejar import Cookie
 import pytest
-import requests
-import requests_mock
+import httpx
+import respx
 
 REEF_MOCK_URL = "http://192.168.1.123"
 REEF_MOCK_USER = "reef_pi"
 REEF_MOCK_PASSWORD = "reef_password"
 
-class ApiMock:
-    def __init__(self, requests_mock, url = REEF_MOCK_URL, has_ph = True):
-        self.requests_mock = requests_mock
-        self.url = url
-        self.requests_mock.post(f'{self.url}/auth/signin', cookies={'auth': 'token'}, status_code=200)
+def mock_signin(mock, url = REEF_MOCK_URL):
+    mock.post(f'{url}/auth/signin').respond(200, headers={'set-cookie':'auth=token'})
 
-        self.requests_mock.get(f'{self.url}/api/info', json={
-            'name': 'reef-pi',
-            'ip': '192.168.1.123',
-            'current_time': 'Sat Jun 12 22:05:32',
-            'uptime': '1 week ago',
-            'cpu_temperature': "39.0'C\n",
-            'version': '4.1',
-            'model': 'Raspberry Pi 2 Model B Rev 1.1\x00'})
-            
-        self.requests_mock.get(f'{self.url}/api/capabilities', json={
-            'dev_mode': False,
-            'dashboard': False,
-            'health_check': False,
-            'equipment': True,
-            'timers': False,
-            'lighting': False,
-            'temperature': False,
-            'ato': False,
-            'camera': False,
-            'doser': True,
-            'ph': has_ph,
-            'macro': False,
-            'configuration': False,
-            'journal': False})
+def mock_capabilities(mock, ph=True, url = REEF_MOCK_URL):
+    mock.get(f'{url}/api/capabilities', cookies={"auth": "token"}).respond(200, json={
+        'dev_mode': False,
+        'dashboard': False,
+        'health_check': False,
+        'equipment': True,
+        'timers': False,
+        'lighting': False,
+        'temperature': True,
+        'ato': False,
+        'camera': False,
+        'doser': True,
+        'ph': ph,
+        'macro': False,
+        'configuration': False,
+        'journal': False})
 
-        self.requests_mock.get(f'{self.url}/api/phprobes', json=[
+def mock_phprobes(mock, url = REEF_MOCK_URL):
+        mock.get(f'{url}/api/phprobes').respond(200, json=[
             {"id": "6",
              "name": "pH",
              "enable": True,
@@ -68,8 +59,8 @@ class ApiMock:
              "enable": True,
             }])
 
-        self.requests_mock.get(f'{self.url}/api/phprobes/unknown/readings', status_code=404)
-        self.requests_mock.get(f'{self.url}/api/phprobes/6/readings', json={
+def mock_ph6(mock, url = REEF_MOCK_URL):
+    mock.get(f'{url}/api/phprobes/6/readings').respond(200, json={
             "current":[
                 {"value":8.191549295774648,"up":0,"down":15,"time":"Jun-08-02:07, 2021"},
                 {"value":8.24507042253521,"up":0,"down":15,"time":"Jun-08-02:08, 2021"},
@@ -109,14 +100,34 @@ class ApiMock:
                 {"value":8.22,"up":0,"down":3600,"time":"Mar-07-23:00, 2021"}]
         })
 
-        self.requests_mock.get(f'{self.url}/api/phprobes/7/readings', json={
+def mock_ph78(mock, url = REEF_MOCK_URL):
+    mock.get(f'{url}/api/phprobes/7/readings').respond(200, json={
             "historical":[
                 {"value":4.0,"up":0,"down":15,"time":"Jun-08-02:07, 2021"},
                 {"value":5.1,"up":0,"down":15,"time":"Jun-08-02:08, 2021"}]})
 
-        self.requests_mock.get(f'{self.url}/api/phprobes/8/readings', json={})
+    mock.get(f'{url}/api/phprobes/8/readings').respond(200, json={})
 
-        self.requests_mock.get(f'{self.url}/api/doser/pumps', json=[
+def mock_info(mock, url = REEF_MOCK_URL):
+    mock.get(f'{url}/api/info').respond(200, json={
+            'name': 'reef-pi',
+            'ip': '192.168.1.123',
+            'current_time': 'Sat Jun 12 22:05:32',
+            'uptime': '1 week ago',
+            'cpu_temperature': "39.0'C\n",
+            'version': '4.1',
+            'model': 'Raspberry Pi 2 Model B Rev 1.1\x00'})
+
+
+def mock_all(mock, url = REEF_MOCK_URL, has_ph = True):
+        mock_signin(mock)
+        mock_capabilities(mock)
+        mock_info(mock)
+        mock_phprobes(mock)
+        mock_ph6(mock)
+        mock_ph78(mock)
+
+        mock.get(f'{url}/api/doser/pumps').respond(200, json=[
             {"id": "1", "name": "Pump1 sched1", "jack": "1", "pin": 0, "regiment": {"enable": True, "schedule": 
                     {"day": "*","hour": "19","minute": "30","second": "0","week": "*","month": "*"},
                     "duration": 15,"speed": 20}},
@@ -134,7 +145,7 @@ class ApiMock:
                     "duration": 15,"speed": 20}}
         ])
 
-        self.requests_mock.get(f'{self.url}/api/doser/pumps/1/usage', json= {
+        mock.get(f'{url}/api/doser/pumps/1/usage').respond(200, json= {
             "current": [
                 {"pump":11,"time":"Aug-18-14:05, 2021"},
                 {"pump":15,"time":"Aug-18-19:30, 2021"},
@@ -152,7 +163,7 @@ class ApiMock:
                 {"pump":15,"time":"Aug-23-19:30, 2021"}]
         })
 
-        self.requests_mock.get(f'{self.url}/api/doser/pumps/2/usage', json= {
+        mock.get(f'{url}/api/doser/pumps/2/usage').respond(200, json= {
             "current": [
                 {"pump":11,"time":"Aug-18-14:05, 2021"},
                 {"pump":15,"time":"Aug-18-19:30, 2021"},
@@ -169,7 +180,7 @@ class ApiMock:
                 {"pump":15,"time":"Aug-22-21:30, 2021"}]
         })
 
-        self.requests_mock.get(f'{self.url}/api/doser/pumps/3/usage', json= {
+        mock.get(f'{url}/api/doser/pumps/3/usage').respond(200, json= {
             "current": [
                 {"pump":11,"time":"Aug-18-14:05, 2021"},
                 {"pump":15,"time":"Aug-18-19:30, 2021"},
@@ -186,7 +197,7 @@ class ApiMock:
                 {"pump":15,"time":"Aug-23-22:30, 2021"}]
         })
 
-        self.requests_mock.get(f'{self.url}/api/doser/pumps/4/usage', json= {
+        mock.get(f'{url}/api/doser/pumps/4/usage').respond(200, json= {
             "historical": [
                 {"pump":26,"time":"Aug-18-14:05, 2021"},
                 {"pump":15,"time":"Aug-19-19:30, 2021"},
@@ -196,10 +207,10 @@ class ApiMock:
                 {"pump":15,"time":"Aug-23-19:30, 2021"}]
         })
 
-        self.requests_mock.get(f'{self.url}/api/doser/pumps/5/usage', json= {
+        mock.get(f'{url}/api/doser/pumps/5/usage').respond(200, json= {
         })
 
-        self.requests_mock.get(f'{self.url}/api/equipment', json = 
+        mock.get(f'{url}/api/equipment').respond(200, json = 
             [
                 {"id": "1", "name": "Old light", "outlet": "1", "on": True, "stay_off_on_boot": False}, 
                 {"id": "17", "name": "Led light 1", "outlet": "17", "on": False, "stay_off_on_boot": False}, 
@@ -208,3 +219,7 @@ class ApiMock:
                 {"id": "20", "name": "Heater", "outlet": "20", "on": False, "stay_off_on_boot": False}, 
                 {"id": "21", "name": "Cooler", "outlet": "21", "on": False, "stay_off_on_boot": False}]
         )
+
+        mock.get(f'{url}/api/tcs').respond(200, json = [{"id": "1", "name": "Temp", "fahrenheit": False}])
+
+        mock.get(f'{url}/api/tcs/1/current_reading').respond(200, json={'temperature': '25.0'})

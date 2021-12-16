@@ -3,15 +3,22 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.reef_pi import DOMAIN
 
-from . import api_mock
+import pytest
+import respx
+from . import async_api_mock
 
-async def test_ph(hass, requests_mock):
-    mock = api_mock.ApiMock(requests_mock)
+@pytest.fixture
+async def async_api_mock_instance():
+    with respx.mock() as mock:
+        async_api_mock.mock_all(mock)
+        yield mock
 
+
+async def test_ph(hass, async_api_mock_instance):
     entry = MockConfigEntry(domain=DOMAIN, data={
-        "host": api_mock.REEF_MOCK_URL,
-        "username": api_mock.REEF_MOCK_USER,
-        "password": api_mock.REEF_MOCK_PASSWORD,
+        "host": async_api_mock.REEF_MOCK_URL,
+        "username": async_api_mock.REEF_MOCK_USER,
+        "password": async_api_mock.REEF_MOCK_PASSWORD,
         "verify": False})
 
     entry.add_to_hass(hass)
@@ -23,13 +30,11 @@ async def test_ph(hass, requests_mock):
     assert state.state == '8.1943661971831'
     assert state.name == 'reef-pi: pH'
 
-async def test_ph_without_current(hass, requests_mock):
-    mock = api_mock.ApiMock(requests_mock)
-
+async def test_ph_without_current(hass, async_api_mock_instance):
     entry = MockConfigEntry(domain=DOMAIN, data={
-        "host": api_mock.REEF_MOCK_URL,
-        "username": api_mock.REEF_MOCK_USER,
-        "password": api_mock.REEF_MOCK_PASSWORD,
+        "host": async_api_mock.REEF_MOCK_URL,
+        "username": async_api_mock.REEF_MOCK_USER,
+        "password": async_api_mock.REEF_MOCK_PASSWORD,
         "verify": False})
 
     entry.add_to_hass(hass)
