@@ -36,7 +36,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     info = await hub.info()
 
     # Return info that you want to store in the config entry.
-    return {"title": hub.info["name"]}
+    return {"title": info["name"]}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
