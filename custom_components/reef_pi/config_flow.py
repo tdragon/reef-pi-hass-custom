@@ -13,7 +13,7 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .const import DOMAIN
 
-from .api import ReefApi, CannotConnect, InvalidAuth
+from .async_api import ReefApi, CannotConnect, InvalidAuth
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,11 +32,11 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     """
     hub = ReefApi(data["host"], verify=data["verify"])
 
-    await hass.async_add_executor_job(hub.authenticate, data["username"], data["password"])
-    info = await hass.async_add_executor_job(hub.info)
+    await hub.authenticate(data["username"], data["password"])
+    info = await hub.info()
 
     # Return info that you want to store in the config entry.
-    return {"title": info["name"]}
+    return {"title": hub.info["name"]}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

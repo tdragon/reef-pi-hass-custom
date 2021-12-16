@@ -64,14 +64,14 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         """Return the state of the sensor."""
         return self.api.equipment[self._id]["on"]
 
-    def turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
-        self.api.equipment_control(self._id, True)
+        await self.api.equipment_control(self._id, True)
         self.schedule_update_ha_state(True)
 
-    def turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs) -> None:
         """Turn the entity on."""
-        self.api.equipment_control(self._id, False)
+        await self.api.equipment_control(self._id, False)
         self.schedule_update_ha_state(True)
 
     @property

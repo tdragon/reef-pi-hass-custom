@@ -1,6 +1,13 @@
 """Test Ph sensor for Reef_Pi integration."""
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from homeassistant.const import (
+    ATTR_ASSUMED_STATE,
+    ATTR_DEVICE_CLASS,
+    STATE_OFF,
+    STATE_ON,
+)
+
 from custom_components.reef_pi import DOMAIN
 
 
@@ -14,8 +21,8 @@ async def async_api_mock_instance():
         async_api_mock.mock_all(mock)
         yield mock
 
-async def test_sensors(hass, async_api_mock_instance):
 
+async def test_switch(hass, async_api_mock_instance):
     entry = MockConfigEntry(domain=DOMAIN, data={
         "host": async_api_mock.REEF_MOCK_URL,
         "username": async_api_mock.REEF_MOCK_USER,
@@ -26,8 +33,10 @@ async def test_sensors(hass, async_api_mock_instance):
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.reef_pi")
-    assert state
-    assert state.state == '39.0'
-    assert state.name == 'reef-pi'
-    assert state.attributes['unit_of_measurement'] == '°C'
+
+    state = hass.states.get("switch.reef_pi_co2")
+    assert state.state == STATE_ON
+
+    state = hass.states.get("switch.reef_pi_cooler")
+    assert state.state == STATE_OFF
+
