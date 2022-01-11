@@ -19,7 +19,7 @@ def mock_capabilities(mock, ph=True, url = REEF_MOCK_URL):
         'timers': False,
         'lighting': False,
         'temperature': True,
-        'ato': False,
+        'ato': True,
         'camera': False,
         'doser': True,
         'ph': ph,
@@ -118,6 +118,26 @@ def mock_info(mock, url = REEF_MOCK_URL):
             'version': '4.1',
             'model': 'Raspberry Pi 2 Model B Rev 1.1\x00'})
 
+
+def mock_atos(mock, url = REEF_MOCK_URL):
+    mock.get(f'{url}/api/atos').respond(200, json = [
+        {
+            "id":"1",
+            "is_macro":False,
+            "inlet":"2",
+            "pump":"1",
+            "period":120,
+            "control":True,
+            "enable":True,
+            "notify":{
+                "enable":False,
+                "max":0
+                },
+            "name":"Test ATO",
+            "disable_on_alert":False,
+            "one_shot":False}])
+
+    mock.get(f'{url}/api/atos/1/usage').respond(200, json = {"current":[{"pump":120,"time":"Jan-11-09:01, 2022"}]})
 
 def mock_all(mock, url = REEF_MOCK_URL, has_ph = True):
         mock_signin(mock)

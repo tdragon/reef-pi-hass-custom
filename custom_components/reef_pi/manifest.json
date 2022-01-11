@@ -9,7 +9,7 @@
   "zeroconf": [],
   "homekit": {},
   "requirements": [
-    "requests>=2.26.0"
+    "httpx>=0.21.0"
   ],
   "dependencies": [],
   "codeowners": [

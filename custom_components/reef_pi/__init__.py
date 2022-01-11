@@ -101,16 +101,110 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.has_equipment = False
         self.has_ph = False
         self.has_pumps = False
+        self.has_ato = False
 
         self.info = {}
+        self.capabilities = {}
         self.tcs = {}
         self.equipment = {}
         self.ph = {}
         self.pumps = {}
+        self.ato = {}
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL_MIN
         )
+
+    async def update_capabilities(self):
+        _LOGGER.debug("Fetching capabilities")
+        self.capabilities = await self.api.capabilities()
+        if self.capabilities:
+            get_cabability = lambda n: n in self.capabilities.keys() and self.capabilities[n]
+            self.has_temperature = get_cabability("temperature")
+            self.has_equipment = get_cabability("equipment")
+            self.has_ph = get_cabability("ph")
+            self.has_pumps = get_cabability("doser")
+            self.has_ato = get_cabability("ato")
+            _LOGGER.debug("Capabilities: ok")
+
+    async def update_info(self):
+        _LOGGER.debug("Fetching info")
+        info = await self.api.info()
+        if info:
+            info["cpu_temperature"] = float(info["cpu_temperature"].split("'")[0])
+            info["model"] = info["model"].rstrip("\0")
+            info["capabilities"] = self.capabilities
+            _LOGGER.debug("Basic info: ok")
+            self.info = info
+            _LOGGER.debug("Info: ok")
+    
+    async def update_temperature(self):
+        if self.has_temperature:
+            _LOGGER.debug("Fetching temperature")
+            sensors = await self.api.temperature_sensors()
+            if sensors:
+                _LOGGER.debug("temperature updated: %d", len(sensors))
+                self.tcs = {
+                    t["id"]: {
+                        "name": t["name"],
+                        "fahrenheit": t["fahrenheit"],
+                        "temperature": (await self.api.temperature(t["id"]))["temperature"],
+                        "attributes": t,
+                    }
+                    for t in sensors
+                }
+    async def update_equipment(self):
+        if self.has_equipment:
+            _LOGGER.debug("Fetching equipment")
+            equipment = await self.api.equipment()
+            if equipment:
+                _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
+                self.equipment = {t["id"]: t for t in equipment}
+
+    async def update_ph(self):
+        if self.has_ph:
+            _LOGGER.debug("Fetching phprobes")
+            probes = await self.api.phprobes()
+            if probes:
+                _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
+                all_ph = {}
+                for p in probes:
+                    ph = await self.api.ph(p['id'])
+                    all_ph[p["id"]] = {
+                        "name": p["name"],
+                        "value": ph["value"],
+                        "attributes": p
+                    }
+                self.ph = all_ph
+
+    async def update_pumps(self):
+        if self.has_pumps:
+            _LOGGER.debug("Fetching pumps")
+            result = {}
+            try:
+                pumps = await self.api.pumps()
+                for pump in pumps:
+                    key = f"{pump['jack']}_{pump['pin']}"
+                    _LOGGER.debug("Pump %s: %s", key, json.dumps(pump))
+                    if key not in result.keys():
+                        result[key] = {
+                            "name": pump['name'],
+                            "time": datetime.fromtimestamp(0),
+                            "attributes": {
+                                pump['id']: pump
+                            }}
+                    else:
+                        result[key]['attributes'][pump['id']] = pump
+
+                    current = await self.api.pump(pump['id'])
+                    if current and "time" in current.keys() and "pump" in current.keys():
+                        time = datetime.strptime(current['time'], REEFPI_DATETIME_FORMAT)
+                        if time > result[key]['time']:
+                            result[key]['time'] = time
+                            result[key]['attributes']['duration'] = current['pump']
+            except Exception as ex:
+                _LOGGER.exception(ex)
+            self.pumps = result
 
     async def _async_update_data(self):
         """Update data via REST API."""
@@ -120,89 +214,12 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 await self.api.authenticate(self.username, self.password)
                 _LOGGER.debug("Authenticated")
 
-            _LOGGER.debug("Fetching capabilities")
-            capabilities = await self.api.capabilities()
-            if capabilities:
-                get_cabability = lambda n: n in capabilities.keys() and capabilities[n]
-                self.has_temperature = get_cabability("temperature")
-                self.has_equipment = get_cabability("equipment")
-                self.has_ph = get_cabability("ph")
-                self.has_pumps = get_cabability("doser")
-                _LOGGER.debug("Capabilities: ok")
-
-            _LOGGER.debug("Fetching info")
-            info = await self.api.info()
-            if info:
-                info["cpu_temperature"] = float(info["cpu_temperature"].split("'")[0])
-                info["model"] = info["model"].rstrip("\0")
-                info["capabilities"] = capabilities
-                _LOGGER.debug("Basic info: ok")
-                self.info = info
-
-            if self.has_temperature:
-                _LOGGER.debug("Fetching temperature")
-                sensors = await self.api.temperature_sensors()
-                if sensors:
-                    _LOGGER.debug("temperature updated: %d", len(sensors))
-                    self.tcs = {
-                        t["id"]: {
-                            "name": t["name"],
-                            "fahrenheit": t["fahrenheit"],
-                            "temperature": (await self.api.temperature(t["id"]))["temperature"],
-                            "attributes": t,
-                        }
-                        for t in sensors
-                    }
-
-            if self.has_equipment:
-                _LOGGER.debug("Fetching equipment")
-                equipment = await self.api.equipment()
-                if equipment:
-                    _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
-                    self.equipment = {t["id"]: t for t in equipment}
-            
-            if self.has_ph:
-                _LOGGER.debug("Fetching phprobes")
-                probes = await self.api.phprobes()
-                if probes:
-                    _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
-                    all_ph = {}
-                    for p in probes:
-                        ph = await self.api.ph(p['id'])
-                        all_ph[p["id"]] = {
-                            "name": p["name"],
-                            "value": ph["value"],
-                            "attributes": p
-                        }
-                    self.ph = all_ph
-            
-            if self.has_pumps:
-                _LOGGER.debug("Fetching pumps")
-                result = {}
-                try:
-                    pumps = await self.api.pumps()
-                    for pump in pumps:
-                        key = f"{pump['jack']}_{pump['pin']}"
-                        _LOGGER.debug("Pump %s: %s", key, json.dumps(pump))
-                        if key not in result.keys():
-                            result[key] = {
-                                "name": pump['name'],
-                                "time": datetime.fromtimestamp(0),
-                                "attributes": {
-                                    pump['id']: pump
-                                }}
-                        else:
-                            result[key]['attributes'][pump['id']] = pump
-
-                        current = await self.api.pump(pump['id'])
-                        if current and "time" in current.keys() and "pump" in current.keys():
-                            time = datetime.strptime(current['time'], REEFPI_DATETIME_FORMAT)
-                            if time > result[key]['time']:
-                                result[key]['time'] = time
-                                result[key]['attributes']['duration'] = current['pump']
-                except Exception as ex:
-                    _LOGGER.exception(ex)
-                self.pumps = result
+            await self.update_capabilities()
+            await self.update_info()
+            await self.update_temperature()
+            await self.update_equipment()
+            await self.update_ph()
+            await self.update_pumps()    
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
