@@ -118,6 +118,13 @@ class ReefApi:
             return readings['historical'][-1]
         return None
 
+    async def ato_update(self, id, enable):
+        payload = await self._get(f"atos/{id}")
+        payload["id"] = id
+        payload["enable"] = enable
+        return await self._post(f"atos/{id}", payload)
+
+
 class CannotConnect(Exception):
     """Error to indicate we cannot connect."""
 

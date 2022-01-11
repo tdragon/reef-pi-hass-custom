@@ -28,13 +28,22 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     ]
     pumps = [
         ReefPiPump(id, base_name + "pump_" + id, coordinator)
-        for id, pump in coordinator.pumps.items()
+        for id in coordinator.pumps.keys()
     ]
+    atos = [
+        ReefPiATO(id, base_name + ato["name"] + " Last Run", False, coordinator)
+        for id, ato in coordinator.ato.items()
+    ] + [
+        ReefPiATO(id, base_name + ato["name"] + " Duration", True, coordinator)
+        for id, ato in coordinator.ato.items()
+    ]
+
     _LOGGER.debug("sensor base name: %s, temperature: %d, pH: %d", base_name, len(sensors), len(ph_sensors))
     async_add_entities(sensors)
     async_add_entities(ph_sensors)
     async_add_entities([ReefPiBaicInfo(coordinator)])
     async_add_entities(pumps)
+    async_add_entities(atos)
 
 
 class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
@@ -235,3 +244,57 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.pumps[self._id]["attributes"]
+
+class ReefPiATO(CoordinatorEntity, SensorEntity):
+    def __init__(self, id, name, show_pump, coordinator):
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._id = id
+        self._name = name
+        self._show_pump = show_pump
+        self.api = coordinator
+
+    @property
+    def device_class(self):
+        if not self._show_pump:
+            return SensorDeviceClass.TIMESTAMP
+        return None
+
+    @property
+    def device_info(self):
+        return {
+            'identifiers': {
+                (DOMAIN, self.coordinator.unique_id)
+            }}
+
+    @property
+    def name(self):
+        """Return the name of the sensor"""
+        return self._name
+
+    @property
+    def unique_id(self):
+        """Return a unique_id for this entity."""
+        if self._show_pump:
+            return f"{self.coordinator.unique_id}_ato_{self._id}_duration"
+        else:
+            return f"{self.coordinator.unique_id}_ato_{self._id}_last_run"
+
+
+    @property
+    def available(self):
+        """Return if available"""
+        return self._id in self.api.ato_states.keys() and self.api.ato_states[self._id]["ts"] != datetime.fromtimestamp(0)
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        if self._show_pump:
+            return self.api.ato_states[self._id]["pump"]
+        else:
+            return self.api.ato_states[self._id]["ts"].isoformat()
+
+    @property
+    def extra_state_attributes(self):
+        return self.api.ato_states[self._id]
+

@@ -110,6 +110,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.ph = {}
         self.pumps = {}
         self.ato = {}
+        self.ato_states = {}
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL_MIN
@@ -206,6 +207,17 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.exception(ex)
             self.pumps = result
 
+    async def update_atos(self):
+        if self.has_ato:
+            atos = await self.api.atos()
+            atos = {a['id']: a for a in atos}
+            ato_states = {}
+            for id in atos.keys():
+                ato_states[id] = await self.api.ato(id)
+                ato_states[id]['ts'] = datetime.strptime(ato_states[id]['time'], REEFPI_DATETIME_FORMAT)
+            self.ato = atos
+            self.ato_states = ato_states
+
     async def _async_update_data(self):
         """Update data via REST API."""
         try:
@@ -220,6 +232,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_equipment()
             await self.update_ph()
             await self.update_pumps()    
+            await self.update_atos()
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
@@ -229,3 +242,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def equipment_control(self, id, on):
         await self.api.equipment_control(id, on)
         self.equipment[id]["on"] = on
+
+    async def ato_update(self, id, enable):
+        config = self.ato_states[id]
+        await self.api.ato_update(id, enable)

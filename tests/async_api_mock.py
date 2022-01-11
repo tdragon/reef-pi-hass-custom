@@ -146,6 +146,7 @@ def mock_all(mock, url = REEF_MOCK_URL, has_ph = True):
         mock_phprobes(mock)
         mock_ph6(mock)
         mock_ph78(mock)
+        mock_atos(mock)
 
         mock.get(f'{url}/api/doser/pumps').respond(200, json=[
             {"id": "1", "name": "Pump1 sched1", "jack": "1", "pin": 0, "regiment": {"enable": True, "schedule": 
