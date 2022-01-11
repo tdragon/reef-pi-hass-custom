@@ -40,3 +40,18 @@ async def test_switch(hass, async_api_mock_instance):
     state = hass.states.get("switch.reef_pi_cooler")
     assert state.state == STATE_OFF
 
+async def test_ato(hass, async_api_mock_instance):
+    entry = MockConfigEntry(domain=DOMAIN, data={
+        "host": async_api_mock.REEF_MOCK_URL,
+        "username": async_api_mock.REEF_MOCK_USER,
+        "password": async_api_mock.REEF_MOCK_PASSWORD,
+        "verify": False})
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+
+    state = hass.states.get("switch.reef_pi_test_ato_enabled")
+    assert state.state == STATE_ON
+

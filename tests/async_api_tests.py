@@ -52,3 +52,14 @@ async def test_ph(reef_pi_instance):
     assert None == (await reef.ph('unknown'))['value']
 
 
+@pytest.mark.asyncio
+async def test_atos(reef_pi_instance):
+    mock, reef = reef_pi_instance
+    async_api_mock.mock_atos(mock)
+    info = await reef.atos()
+    assert '1' == info[0]['id']
+
+    usage = await reef.ato(1)
+    assert 120 == usage['pump']
+
+
