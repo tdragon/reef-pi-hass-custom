@@ -134,13 +134,13 @@ class ReefPiAtoSwitch(CoordinatorEntity, SwitchEntity):
         """Turn the entity on."""
         await self.api.ato_update(self._id, True)
         self.api.ato[self._id]["enable"] = True
-        self.schedule_update_ha_state(True)
+        self.schedule_update_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn the entity on."""
         await self.api.ato_update(self._id, False)
         self.api.ato[self._id]["enable"] = False
-        self.schedule_update_ha_state(True)
+        self.schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):

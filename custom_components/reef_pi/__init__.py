@@ -213,8 +213,18 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             atos = {a['id']: a for a in atos}
             ato_states = {}
             for id in atos.keys():
-                ato_states[id] = await self.api.ato(id)
-                ato_states[id]['ts'] = datetime.strptime(ato_states[id]['time'], REEFPI_DATETIME_FORMAT)
+                states = await self.api.ato(id)
+                ato_state = [s for s in states if s['pump'] != 0]
+                if len(ato_state) > 0:
+                    ato_states[id] = ato_state[-1]
+                    ato_states[id]['ts'] = datetime.strptime(ato_states[id]['time'], REEFPI_DATETIME_FORMAT)
+                elif id not in ato_states.keys():
+                    if len(states) > 0:
+                        ato_states[id] = states[-1]
+                        ato_states[id]['ts'] = datetime.strptime(ato_states[id]['time'], REEFPI_DATETIME_FORMAT)
+                    else:
+                        ato_states[id] = {'ts': datetime.fromtimestamp(0), 'pump': 0}
+                    
             self.ato = atos
             self.ato_states = ato_states
 
