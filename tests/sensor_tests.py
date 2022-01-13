@@ -67,3 +67,22 @@ async def test_ato_duration(hass, async_api_mock_instance):
     assert state
     assert state.state == '120'
     assert state.name == 'reef-pi: Test ATO Duration'
+
+async def test_ato_empty(hass):
+
+    with respx.mock() as mock:
+        async_api_mock.mock_all(mock, has_ato_usage=False)
+        entry = MockConfigEntry(domain=DOMAIN, data={
+            "host": async_api_mock.REEF_MOCK_URL,
+            "username": async_api_mock.REEF_MOCK_USER,
+            "password": async_api_mock.REEF_MOCK_PASSWORD,
+            "verify": False})
+
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        state = hass.states.get("sensor.reef_pi_test_ato_duration")
+        assert state
+        assert state.state == 'unavailable'
+        assert state.name == 'reef-pi: Test ATO Duration'

@@ -105,7 +105,7 @@ class ReefApi:
             return readings['current'][-1]
         if readings and "historical" in readings.keys() and len(readings['historical']):
             return readings['historical'][-1]
-        return None
+        return []
 
     async def atos(self):
         return await self._get("atos")
@@ -116,7 +116,7 @@ class ReefApi:
             return readings['current']
         if readings and "historical" in readings.keys() and len(readings['historical']):
             return readings['historical']
-        return None
+        return []
 
     async def ato_update(self, id, enable):
         payload = await self._get(f"atos/{id}")

@@ -119,7 +119,7 @@ def mock_info(mock, url = REEF_MOCK_URL):
             'model': 'Raspberry Pi 2 Model B Rev 1.1\x00'})
 
 
-def mock_atos(mock, url = REEF_MOCK_URL):
+def mock_atos(mock, url = REEF_MOCK_URL, empty_usage = False):
     mock.get(f'{url}/api/atos').respond(200, json = [
         {
             "id":"1",
@@ -137,16 +137,19 @@ def mock_atos(mock, url = REEF_MOCK_URL):
             "disable_on_alert":False,
             "one_shot":False}])
 
-    mock.get(f'{url}/api/atos/1/usage').respond(200, json = {"current":[{"pump":120,"time":"Jan-11-09:01, 2022"}, {"pump":0,"time":"Jan-12-09:01, 2022"}]})
+    if empty_usage:
+        mock.get(f'{url}/api/atos/1/usage').respond(200, json = {})
+    else:
+        mock.get(f'{url}/api/atos/1/usage').respond(200, json = {"current":[{"pump":120,"time":"Jan-11-09:01, 2022"}, {"pump":0,"time":"Jan-12-09:01, 2022"}]})
 
-def mock_all(mock, url = REEF_MOCK_URL, has_ph = True):
+def mock_all(mock, url = REEF_MOCK_URL, has_ph = True, has_ato_usage = True):
         mock_signin(mock)
         mock_capabilities(mock)
         mock_info(mock)
         mock_phprobes(mock)
         mock_ph6(mock)
         mock_ph78(mock)
-        mock_atos(mock)
+        mock_atos(mock, empty_usage=not has_ato_usage)
 
         mock.get(f'{url}/api/doser/pumps').respond(200, json=[
             {"id": "1", "name": "Pump1 sched1", "jack": "1", "pin": 0, "regiment": {"enable": True, "schedule": 
