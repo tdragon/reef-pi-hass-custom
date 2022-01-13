@@ -137,7 +137,7 @@ def mock_atos(mock, url = REEF_MOCK_URL):
             "disable_on_alert":False,
             "one_shot":False}])
 
-    mock.get(f'{url}/api/atos/1/usage').respond(200, json = {"current":[{"pump":120,"time":"Jan-11-09:01, 2022"}]})
+    mock.get(f'{url}/api/atos/1/usage').respond(200, json = {"current":[{"pump":120,"time":"Jan-11-09:01, 2022"}, {"pump":0,"time":"Jan-12-09:01, 2022"}]})
 
 def mock_all(mock, url = REEF_MOCK_URL, has_ph = True):
         mock_signin(mock)

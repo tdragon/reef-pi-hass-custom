@@ -60,6 +60,8 @@ async def test_atos(reef_pi_instance):
     assert '1' == info[0]['id']
 
     usage = await reef.ato(1)
-    assert 120 == usage['pump']
+    assert 0 == usage[-1]['pump']
+    assert 120 == usage[0]['pump']
+
 
 

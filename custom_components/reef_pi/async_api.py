@@ -113,9 +113,9 @@ class ReefApi:
     async def ato(self, id):
         readings = await self._get(f"atos/{id}/usage")
         if readings and "current" in readings.keys() and len(readings['current']):
-            return readings['current'][-1]
+            return readings['current']
         if readings and "historical" in readings.keys() and len(readings['historical']):
-            return readings['historical'][-1]
+            return readings['historical']
         return None
 
     async def ato_update(self, id, enable):
