@@ -1,15 +1,16 @@
 [![Community Forum](https://img.shields.io/badge/Community-Forum-41BDF5.svg?style=popout)](https://community.home-assistant.io/t/reef-pi-home-assistant-integration/312945)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-[![GitHub release](https://img.shields.io/github/release/tdragon/reef-pi-hass-custom.svg)](https://github.com/reef-pi/reef-pi/releases)
+[![GitHub release](https://img.shields.io/github/release/tdragon/reef-pi-hass-custom.svg)](https://github.com/tdragon/reef-pi-hass-custom/releases)
 ![Pytest](https://github.com/tdragon/reef-pi-hass-custom/workflows/pytest/badge.svg?branch=master)
 ![Pytest](https://github.com/tdragon/reef-pi-hass-custom/workflows/hassfest/badge.svg?branch=master)
 ![GitHub All Releases](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/total)
+![GitHub Latest Release](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/latest/total)
 
 
 # Home Assistane Reef Pi integration
 
-This custom integration provides a way to sensors data and control equipment connected to [Reef-Pi (An open source reef tank controller based on Raspberry Pi)](http://reef-pi.github.io/).
+This custom integration provides a way to monitor sensors data and control equipment connected to [Reef-Pi (An open source reef tank controller based on Raspberry Pi)](http://reef-pi.github.io/) ([GIT repository](https://github.com/reef-pi/reef-pi/releases)).
 
 ## Installation
 
