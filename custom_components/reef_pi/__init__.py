@@ -340,6 +340,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_inlets()
             await self.update_lights()
             await self.update_macros()
+            await self.update_timers()
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:

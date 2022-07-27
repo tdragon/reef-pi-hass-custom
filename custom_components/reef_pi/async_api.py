@@ -57,9 +57,12 @@ class ReefApi:
             async with httpx.AsyncClient(verify=self.verify) as client:
                 url = f"{self.host}/api/{api}"
                 response = await client.post(url, json=payload, cookies=self.cookies, timeout=self.timeout)
-            return response.status_code == 200
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
+
+        if not response.status_code == 200:
+            return {}
+        return json.loads(response.text)
 
     async def equipment(self, id=None):
         if id:
