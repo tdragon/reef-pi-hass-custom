@@ -1,0 +1,23 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Az eszköz már konfigurálva van"
+        },
+        "error": {
+            "cannot_connect": "Sikertelen csatlakozás",
+            "invalid_auth": "Hibás bejelentkezés",
+            "unknown": "Ismeretlen hiba"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Szerver",
+                    "password": "Jelszó",
+                    "username": "Felhasználónév",
+                    "verify": "TLS hitelesités"
+                }
+            }
+        }
+    },
+    "title": "Reef-PI integráció"
+}

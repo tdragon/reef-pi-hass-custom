@@ -28,7 +28,7 @@ from .async_api import ReefApi, CannotConnect, InvalidAuth
 
 # TODO List the platforms that you want to support.
 # For your initial PR, limit it to 1 platform.
-PLATFORMS = ["sensor", "switch"]
+PLATFORMS = ["sensor", "switch", "light", "binary_sensor", "button"]
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
@@ -102,6 +102,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.has_ph = False
         self.has_pumps = False
         self.has_ato = False
+        self.has_timers = False
+        self.has_lighs = False
+        self.has_camera = False
+        self.has_macro = False
 
         self.info = {}
         self.capabilities = {}
@@ -111,6 +115,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.pumps = {}
         self.ato = {}
         self.ato_states = {}
+        self.lights = {}
+        self.inlets = {}
+        self.macros = {}
+        self.timers = {}
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL_MIN
@@ -126,6 +134,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             self.has_ph = get_cabability("ph")
             self.has_pumps = get_cabability("doser")
             self.has_ato = get_cabability("ato")
+            self.has_timers = get_cabability("timers")
+            self.has_lighs = get_cabability("lighting")
+            self.has_camera = get_cabability("camera")
+            self.has_macro = get_cabability("macro")
             _LOGGER.debug("Capabilities: ok")
 
     async def update_info(self):
@@ -138,29 +150,66 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Basic info: ok")
             self.info = info
             _LOGGER.debug("Info: ok")
-    
+
     async def update_temperature(self):
         if self.has_temperature:
             _LOGGER.debug("Fetching temperature")
             sensors = await self.api.temperature_sensors()
             if sensors:
                 _LOGGER.debug("temperature updated: %d", len(sensors))
-                self.tcs = {
-                    t["id"]: {
-                        "name": t["name"],
-                        "fahrenheit": t["fahrenheit"],
-                        "temperature": (await self.api.temperature(t["id"]))["temperature"],
-                        "attributes": t,
+                all_tcs = {}
+                for sensor in sensors:
+                    all_tcs[sensor["id"]] = {
+                        "name": sensor["name"],
+                        "fahrenheit": sensor["fahrenheit"],
+                        "temperature": (await self.api.temperature(sensor["id"]))["temperature"],
+                        "attributes": sensor,
                     }
-                    for t in sensors
-                }
+                self.tcs = all_tcs
+
     async def update_equipment(self):
         if self.has_equipment:
             _LOGGER.debug("Fetching equipment")
-            equipment = await self.api.equipment()
-            if equipment:
-                _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
-                self.equipment = {t["id"]: t for t in equipment}
+            equipments = await self.api.equipment()
+            if equipments:
+                _LOGGER.debug("equipment updated: %s", json.dumps(equipments))
+                all_equipment = {}
+                for equipment in equipments:
+                    all_equipment[equipment["id"]] = {
+                        "name": equipment["name"],
+                        "state": equipment["on"],
+                        "attributes": equipment
+                    }
+                self.equipment = all_equipment
+
+    async def update_timers(self):
+        if self.has_timers:
+            _LOGGER.debug("Fetching timers")
+            timers = await self.api.timers()
+            if timers:
+                _LOGGER.debug("timers updated: %s", json.dumps(timers))
+                all_timers = {}
+                for timer in timers:
+                    all_timers[timer["id"]] = {
+                        "name": timer["name"],
+                        "state": timer["enable"],
+                        "attributes": timer
+                    }
+                self.timers = all_timers
+
+    async def update_macros(self):
+        if self.has_macro:
+            _LOGGER.debug("Fetching macros")
+            macros = await self.api.macros()
+            if macros:
+                _LOGGER.debug("macros updated: %s", json.dumps(macros))
+                all_macros = {}
+                for macro in macros:
+                    all_macros[macro["id"]] = {
+                        "name": macro["name"],
+                        "attributes": macro
+                    }
+                self.macros = all_macros
 
     async def update_ph(self):
         if self.has_ph:
@@ -169,14 +218,60 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             if probes:
                 _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
                 all_ph = {}
-                for p in probes:
-                    ph = await self.api.ph(p['id'])
-                    all_ph[p["id"]] = {
-                        "name": p["name"],
-                        "value": ph["value"],
-                        "attributes": p
+                for probe in probes:
+                    ph = await self.api.ph(probe['id'])
+                    all_ph[probe["id"]] = {
+                        "name": probe["name"],
+                        "value": round(ph["value"], 2),
+                        "attributes": probe
                     }
                 self.ph = all_ph
+
+    async def update_lights(self):
+        if self.has_lighs:
+            _LOGGER.debug("Fetching lights")
+            lights = await self.api.lights()
+            if lights:
+                _LOGGER.debug("lights updated: %s", json.dumps(lights))
+                all_light = {}
+                for light in lights:
+                    first_channel = list(light["channels"].keys())[0]
+                    if light["channels"][first_channel]["manual"] == True:
+                        if light["channels"][first_channel]["value"] > 0:
+                            state = True
+                        else:
+                            state = False
+                        
+                        all_light[light["id"]] = {
+                            "name": light["name"],
+                            "value": light["channels"][first_channel]["value"],
+                            "state": state,
+                            "attributes": light
+                        }
+                        
+                self.lights = all_light
+
+    async def update_inlets(self):
+        if self.has_ato:
+            _LOGGER.debug("Fetching inlets")
+            inlets = await self.api.inlets()
+            if inlets:
+                _LOGGER.debug("inlets updated: %s", json.dumps(inlets))
+                all_inlet = {}
+                for inlet in inlets:
+                    inlet_raw_value = await self.api.inlet(inlet["id"])
+
+                    if inlet_raw_value == 1:
+                        inlet_value = True
+                    else: 
+                        inlet_value = False
+
+                    all_inlet[inlet["id"]] = {
+                        "name": inlet["name"],
+                        "state": inlet_value,
+                        "attributes": inlet
+                    }
+                self.inlets = all_inlet
 
     async def update_pumps(self):
         if self.has_pumps:
@@ -242,16 +337,34 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_ph()
             await self.update_pumps()    
             await self.update_atos()
+            await self.update_inlets()
+            await self.update_lights()
+            await self.update_macros()
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
             raise UpdateFailed(error) from error
         return {}
 
-    async def equipment_control(self, id, on):
-        await self.api.equipment_control(id, on)
-        self.equipment[id]["on"] = on
+    async def equipment_control(self, id, state):
+        await self.api.equipment_control(id, state)
+        self.equipment[id]["state"] = state
+
+    async def light_control(self, id, value):
+        await self.api.light_update(id, value)
+        self.lights[id]["value"] = value
+        if value > 0 :
+            self.lights[id]["state"] = True
+        else:
+            self.lights[id]["state"] = False
 
     async def ato_update(self, id, enable):
-        config = self.ato_states[id]
         await self.api.ato_update(id, enable)
+        self.api.ato[id]["enable"] = enable
+
+    async def run_script(self, id):
+        await self.api.run_macro(id)
+
+    async def timer_control(self, id, state):
+        await self.api.timer_control(id, state)
+        self.timers[id]["state"] = state

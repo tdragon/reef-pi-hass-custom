@@ -15,7 +15,7 @@ from .const import _LOGGER, DOMAIN, MANUFACTURER
 from datetime import datetime
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Add an temperature entity from a config_entry."""
+    """Add multiple entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     base_name = coordinator.info["name"] + ": "
     sensors = [
@@ -27,8 +27,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, ph in coordinator.ph.items()
     ]
     pumps = [
-        ReefPiPump(id, base_name + "pump_" + id, coordinator)
-        for id in coordinator.pumps.keys()
+        ReefPiPump(id, base_name + pump["name"], coordinator)
+        for id, pump in coordinator.pumps.items()
     ]
     atos = [
         ReefPiATO(id, base_name + ato["name"] + " Last Run", False, coordinator)
@@ -215,6 +215,10 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
     @property
+    def icon(self):
+        return "mdi:heat-pump-outline"
+
+    @property
     def device_info(self):
         return {
             'identifiers': {
@@ -297,4 +301,8 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ato_states[self._id]
+
+    @property
+    def icon(self):
+        return "mdi:format-color-fill"
 
