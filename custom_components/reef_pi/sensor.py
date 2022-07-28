@@ -5,7 +5,7 @@ from homeassistant.const import (
     DEGREE)
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-
+from homeassistant.util import slugify
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.typing import StateType
@@ -27,7 +27,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, ph in coordinator.ph.items()
     ]
     pumps = [
-        ReefPiPump(id, base_name + "pump_" + id, coordinator)
+        ReefPiPump(id, base_name + pump["name"], coordinator)
         for id, pump in coordinator.pumps.items()
     ]
     atos = [
@@ -211,6 +211,7 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         self._id = id
         self._name = name
         self.api = coordinator
+        self.entity_id = "sensor." + slugify(f"""{coordinator.info["name"]}_pump_{id}""".lower())
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
 
