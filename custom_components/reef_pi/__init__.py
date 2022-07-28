@@ -21,7 +21,7 @@ from .const import (
     PASSWORD,
     VERIFY_TLS,
     UPDATE_INTERVAL_MIN,
-    TIMEOUT_API_SEC,
+    MANUFACTURER
 )
 
 from .async_api import ReefApi, CannotConnect, InvalidAuth
@@ -123,6 +123,23 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL_MIN
         )
+
+    @property
+    def device_info(self):
+        info = {
+            'identifiers': {
+                (DOMAIN, self.unique_id)
+            },
+            'default_name': self.default_name,
+            'default_manufacturer': MANUFACTURER,
+            "default_model" : "Reef PI",
+            "configuration_url": self.configuration_url
+        }
+        if self.info:
+            info['model'] = self.info["model"]
+            info['sw_version'] = self.info["version"]
+            info['name'] = self.name
+        return info
 
     async def update_capabilities(self):
         _LOGGER.debug("Fetching capabilities")
