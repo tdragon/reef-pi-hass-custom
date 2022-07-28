@@ -146,10 +146,9 @@ class ReefApi:
         payload["enable"] = enable
         return await self._post(f"atos/{id}", payload)
 
-    async def light_update(self, id, value):
+    async def light_update(self, id, channel_id, value):
         payload = await self._get(f"lights/{id}")
-        first_channel = list(payload["channels"].keys())[0]
-        payload["channels"][first_channel]["value"] = value
+        payload["channels"][channel_id]["value"] = value
         return await self._post(f"lights/{id}", payload)
 
     async def macros(self):

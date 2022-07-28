@@ -232,22 +232,28 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Fetching lights")
             lights = await self.api.lights()
             if lights:
-                _LOGGER.debug("lights updated: %s", json.dumps(lights))
                 all_light = {}
                 for light in lights:
-                    first_channel = list(light["channels"].keys())[0]
-                    if light["channels"][first_channel]["manual"] == True:
-                        if light["channels"][first_channel]["value"] > 0:
-                            state = True
-                        else:
-                            state = False
-                        
-                        all_light[light["id"]] = {
-                            "name": light["name"],
-                            "value": light["channels"][first_channel]["value"],
-                            "state": state,
-                            "attributes": light
-                        }
+                    for channel in list(light["channels"].keys()):
+                        light_id = light["id"]
+                        if light["channels"][channel]["manual"] == True:
+                            id = f"{light_id}-{channel}"
+                            light_name = light['name']
+                            channel_name = light['channels'][channel]['name']
+                            
+                            if light["channels"][channel]["value"] > 0:
+                                state = True
+                            else:
+                                state = False
+                            
+                            all_light[id] = {
+                                "name": f"{light_name}-{channel_name}",
+                                "channel_id": channel,
+                                "light_id": light_id,
+                                "value": light["channels"][channel]["value"],
+                                "state": state,
+                                "attributes": light["channels"][channel]
+                            }
                         
                 self.lights = all_light
 
@@ -352,7 +358,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.equipment[id]["state"] = state
 
     async def light_control(self, id, value):
-        await self.api.light_update(id, value)
+        await self.api.light_update(self.lights[id]["light_id"],self.lights[id]["channel_id"], value)
         self.lights[id]["value"] = value
         if value > 0 :
             self.lights[id]["state"] = True
