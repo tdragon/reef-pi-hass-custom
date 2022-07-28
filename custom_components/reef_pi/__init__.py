@@ -222,7 +222,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     ph = await self.api.ph(probe['id'])
                     all_ph[probe["id"]] = {
                         "name": probe["name"],
-                        "value": round(ph["value"], 2),
+                        "value": round(ph["value"], 2) if ph["value"] else None,
                         "attributes": probe
                     }
                 self.ph = all_ph

@@ -247,3 +247,5 @@ def mock_all(mock, url = REEF_MOCK_URL, has_ph = True, has_ato_usage = True):
         mock.get(f'{url}/api/tcs').respond(200, json = [{"id": "1", "name": "Temp", "fahrenheit": False}])
 
         mock.get(f'{url}/api/tcs/1/current_reading').respond(200, json={'temperature': '25.0'})
+
+        mock.get(f'{url}/api/inlets').respond(200, json={})

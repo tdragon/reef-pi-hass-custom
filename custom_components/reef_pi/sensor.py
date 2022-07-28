@@ -27,7 +27,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, ph in coordinator.ph.items()
     ]
     pumps = [
-        ReefPiPump(id, base_name + pump["name"], coordinator)
+        ReefPiPump(id, base_name + "pump_" + id, coordinator)
         for id, pump in coordinator.pumps.items()
     ]
     atos = [
