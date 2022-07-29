@@ -27,7 +27,7 @@ async def test_pump1(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_pump_1_0")
     assert state
     assert state.state == '2021-08-23T20:30:00'
-    assert state.name == 'reef_pi Pump1 sched1'
+    assert state.name == 'Reef PI Pump1 sched1'
 
 
 async def test_pump2(hass, async_api_mock_instance):
@@ -44,7 +44,7 @@ async def test_pump2(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_pump_2_1")
     assert state
     assert state.state == '2021-08-23T21:30:00'
-    assert state.name == 'reef_pi Pump2 sched1'
+    assert state.name == 'Reef PI Pump2 sched1'
 
 async def test_pump_no_current(hass, async_api_mock_instance):
     entry = MockConfigEntry(domain=DOMAIN, data={
@@ -60,7 +60,7 @@ async def test_pump_no_current(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_pump_2_2")
     assert state
     assert state.state == '2021-08-23T19:30:00'
-    assert state.name == 'reef_pi Pump2 sched1'
+    assert state.name == 'Reef PI Pump2 sched1'
 
 
 async def test_pump_no_history(hass, async_api_mock_instance):

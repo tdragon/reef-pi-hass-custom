@@ -29,7 +29,7 @@ async def test_sensors(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi")
     assert state
     assert state.state == '39.0'
-    assert state.name == 'reef_pi'
+    assert state.name == 'Reef PI'
     assert state.attributes['unit_of_measurement'] == '°C'
 
 async def test_temperature_sensor(hass, async_api_mock_instance):
@@ -47,7 +47,7 @@ async def test_temperature_sensor(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_temp")
     assert state
     assert state.state == '25.0'
-    assert state.name == 'reef_pi Temp'
+    assert state.name == 'Reef PI Temp'
     assert state.attributes['unit_of_measurement'] == '°C'
 
 
@@ -66,7 +66,7 @@ async def test_ato(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_test_ato_last_run")
     assert state
     assert state.state == '2022-01-11T09:01:00'
-    assert state.name == 'reef_pi Test ATO Last Run'
+    assert state.name == 'Reef PI Test ATO Last Run'
 
 
 async def test_ato_duration(hass, async_api_mock_instance):
@@ -84,7 +84,7 @@ async def test_ato_duration(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_test_ato_duration")
     assert state
     assert state.state == '120'
-    assert state.name == 'reef_pi Test ATO Duration'
+    assert state.name == 'Reef PI Test ATO Duration'
 
 async def test_ato_empty(hass):
 
@@ -103,4 +103,4 @@ async def test_ato_empty(hass):
         state = hass.states.get("sensor.reef_pi_test_ato_duration")
         assert state
         assert state.state == 'unavailable'
-        assert state.name == 'reef_pi Test ATO Duration'
+        assert state.name == 'Reef PI Test ATO Duration'

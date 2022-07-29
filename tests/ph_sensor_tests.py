@@ -28,7 +28,7 @@ async def test_ph(hass, async_api_mock_instance):
     state = hass.states.get("sensor.reef_pi_ph")
     assert state
     assert state.state == '8.19'
-    assert state.name == 'reef_pi pH'
+    assert state.name == 'Reef PI pH'
 
 async def test_ph_without_current(hass, async_api_mock_instance):
     entry = MockConfigEntry(domain=DOMAIN, data={
