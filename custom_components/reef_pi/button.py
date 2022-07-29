@@ -27,12 +27,12 @@ class ReefPiButton(CoordinatorEntity, ButtonEntity):
         self._name = name
         self.api = coordinator
 
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:script-text-play"
+
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):
@@ -49,12 +49,6 @@ class ReefPiButton(CoordinatorEntity, ButtonEntity):
         """Return if teperature"""
         return self._id in self.api.macros.keys()
 
-    @property
-    def icon(self):
-        return "mdi:script-text-play"
-
-
     async def async_press(self) -> None:
         """Async press action."""
-
         await self.api.run_script(self._id)

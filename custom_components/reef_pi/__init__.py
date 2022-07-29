@@ -139,6 +139,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             info['model'] = self.info["model"]
             info['sw_version'] = self.info["version"]
             info['name'] = self.name
+            info['default_name'] = self.name
         return info
 
     async def update_capabilities(self):
@@ -253,16 +254,12 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 for light in lights:
                     for channel in list(light["channels"].keys()):
                         light_id = light["id"]
-                        if light["channels"][channel]["manual"] == True:
+                        if light["channels"][channel]["manual"]:
                             id = f"{light_id}-{channel}"
                             light_name = light['name']
                             channel_name = light['channels'][channel]['name']
                             
-                            if light["channels"][channel]["value"] > 0:
-                                state = True
-                            else:
-                                state = False
-                            
+                            state =  (light["channels"][channel]["value"] > 0)                            
                             all_light[id] = {
                                 "name": f"{light_name}-{channel_name}",
                                 "channel_id": channel,
