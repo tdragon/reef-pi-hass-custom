@@ -29,10 +29,7 @@ class ReefPiButton(CoordinatorEntity, ButtonEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):

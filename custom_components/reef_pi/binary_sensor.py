@@ -49,10 +49,7 @@ class ReefPiInlet(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def extra_state_attributes(self):

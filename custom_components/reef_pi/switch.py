@@ -39,10 +39,7 @@ class ReefPiTimers(CoordinatorEntity, SwitchEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):
@@ -98,10 +95,7 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):
@@ -157,11 +151,7 @@ class ReefPiAtoSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
-
+        return self.api.device_info
 
     @property
     def name(self):
