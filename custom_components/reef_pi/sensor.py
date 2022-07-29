@@ -5,7 +5,7 @@ from homeassistant.const import (
     DEGREE)
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-
+from homeassistant.util import slugify
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.typing import StateType
@@ -15,7 +15,7 @@ from .const import _LOGGER, DOMAIN, MANUFACTURER
 from datetime import datetime
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Add an temperature entity from a config_entry."""
+    """Add multiple entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     base_name = coordinator.info["name"] + ": "
     sensors = [
@@ -27,8 +27,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, ph in coordinator.ph.items()
     ]
     pumps = [
-        ReefPiPump(id, base_name + "pump_" + id, coordinator)
-        for id in coordinator.pumps.keys()
+        ReefPiPump(id, pump["name"], coordinator)
+        for id, pump in coordinator.pumps.items()
     ]
     atos = [
         ReefPiATO(id, base_name + ato["name"] + " Last Run", False, coordinator)
@@ -59,20 +59,7 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        info = {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            },
-            'default_name': self.api.default_name,
-            'default_manufacturer': MANUFACTURER,
-            "default_model" : "Reef PI",
-            "configuration_url": self.api.configuration_url
-        }
-        if self.api.info:
-            info['model'] = self.api.info["model"]
-            info['sw_version'] = self.api.info["version"]
-            info['name'] = self.name
-        return info
+        return self.api.device_info
 
     @property
     def icon(self):
@@ -120,10 +107,7 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):
@@ -166,10 +150,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def icon(self):
@@ -211,15 +192,18 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         self._id = id
         self._name = name
         self.api = coordinator
+        self.entity_id = "sensor." + slugify(f"""{coordinator.info["name"]}_pump_{id}""".lower())
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_has_entity_name = True
+
+    @property
+    def icon(self):
+        return "mdi:heat-pump-outline"
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):
@@ -262,10 +246,7 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            'identifiers': {
-                (DOMAIN, self.coordinator.unique_id)
-            }}
+        return self.api.device_info
 
     @property
     def name(self):
@@ -297,4 +278,8 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ato_states[self._id]
+
+    @property
+    def icon(self):
+        return "mdi:format-color-fill"
 

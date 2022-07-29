@@ -57,17 +57,20 @@ class ReefApi:
             async with httpx.AsyncClient(verify=self.verify) as client:
                 url = f"{self.host}/api/{api}"
                 response = await client.post(url, json=payload, cookies=self.cookies, timeout=self.timeout)
-            return response.status_code == 200
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
+
+        if not response.status_code == 200:
+            return {}
+        return json.loads(response.text)
 
     async def equipment(self, id=None):
         if id:
             return await self._get(f"equipment/{id}")
         return await self._get("equipment")
 
-    async def equipment_control(self, id, on):
-        payload = {"on": on}
+    async def equipment_control(self, id, state):
+        payload = {"on": state}
         return await self._post(f"equipment/{id}/control", payload)
 
     async def temperature_sensors(self):
@@ -99,6 +102,26 @@ class ReefApi:
     async def pumps(self):
         return await self._get("doser/pumps")
 
+    async def lights(self):
+        return await self._get("lights")
+
+    async def timers(self):
+        return await self._get("timers")
+
+    async def timer_control(self, id, state):
+        payload = await self._get(f"timers/{id}")
+        payload["enable"] = state
+        return await self._post(f"timers/{id}", payload)
+
+    async def inlets(self):
+        return await self._get("inlets")
+
+    async def inlet(self, id):
+        return await self._post(f"inlets/{id}/read", "")
+
+    async def light(self, id):
+        return await self._get(f"lights/{id}")
+
     async def pump(self, id):
         readings = await self._get(f"doser/pumps/{id}/usage")
         if readings and "current" in readings.keys() and len(readings['current']):
@@ -120,9 +143,19 @@ class ReefApi:
 
     async def ato_update(self, id, enable):
         payload = await self._get(f"atos/{id}")
-        payload["id"] = id
         payload["enable"] = enable
         return await self._post(f"atos/{id}", payload)
+
+    async def light_update(self, id, channel_id, value):
+        payload = await self._get(f"lights/{id}")
+        payload["channels"][channel_id]["value"] = value
+        return await self._post(f"lights/{id}", payload)
+
+    async def macros(self):
+        return await self._get(f"macros")
+
+    async def run_macro(self, id):
+        return await self._post(f"macros/{id}/run", "")
 
 
 class CannotConnect(Exception):
