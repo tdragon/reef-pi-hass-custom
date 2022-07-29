@@ -11,9 +11,8 @@ from datetime import datetime
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add multiple entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    base_name = coordinator.info["name"] + ": "
     inlets = [
-        ReefPiInlet(id, base_name + inlet["name"], coordinator)
+        ReefPiInlet(id, inlet["name"], coordinator)
         for id, inlet in coordinator.inlets.items()
     ]
 
@@ -26,6 +25,9 @@ class ReefPiInlet(CoordinatorEntity, BinarySensorEntity):
         self._id = id
         self._name = name
         self.api = coordinator
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:water-circle"
 
     @property
     def unique_id(self):
@@ -55,6 +57,3 @@ class ReefPiInlet(CoordinatorEntity, BinarySensorEntity):
     def extra_state_attributes(self):
         return self.api.inlets[self._id]["attributes"]
 
-    @property
-    def icon(self):
-        return "mdi:water-circle"

@@ -13,9 +13,8 @@ from datetime import datetime
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add multiple entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    base_name = coordinator.info["name"] + ": "
     manual_lights = [
-        ReefPiLight(id, base_name + lights["name"], coordinator)
+        ReefPiLight(id, lights["name"], coordinator)
         for id, lights in coordinator.lights.items()
     ]
 
@@ -28,6 +27,9 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
         self._id = id
         self._name = name
         self.api = coordinator
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:lightbulb-fluorescent-tube"
 
     @property
     def unique_id(self):
@@ -51,10 +53,6 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
     @property
     def extra_state_attributes(self):
         return self.api.lights[self._id]["attributes"]
-
-    @property
-    def icon(self):
-        return "mdi:lightbulb-fluorescent-tube"
 
     @property
     def is_on(self):

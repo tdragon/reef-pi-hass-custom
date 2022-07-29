@@ -139,6 +139,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             info['model'] = self.info["model"]
             info['sw_version'] = self.info["version"]
             info['name'] = self.name
+            info['default_name'] = self.name
         return info
 
     async def update_capabilities(self):

@@ -17,13 +17,12 @@ from datetime import datetime
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add multiple entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    base_name = coordinator.info["name"] + ": "
     sensors = [
-        ReefPiTemperature(id, base_name + tcs["name"], coordinator)
+        ReefPiTemperature(id, tcs["name"], coordinator)
         for id, tcs in coordinator.tcs.items()
     ]
     ph_sensors = [
-        ReefPiPh(id, base_name + ph["name"], coordinator)
+        ReefPiPh(id, ph["name"], coordinator)
         for id, ph in coordinator.ph.items()
     ]
     pumps = [
@@ -31,14 +30,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, pump in coordinator.pumps.items()
     ]
     atos = [
-        ReefPiATO(id, base_name + ato["name"] + " Last Run", False, coordinator)
+        ReefPiATO(id, ato["name"] + " Last Run", False, coordinator)
         for id, ato in coordinator.ato.items()
     ] + [
-        ReefPiATO(id, base_name + ato["name"] + " Duration", True, coordinator)
+        ReefPiATO(id, ato["name"] + " Duration", True, coordinator)
         for id, ato in coordinator.ato.items()
     ]
 
-    _LOGGER.debug("sensor base name: %s, temperature: %d, pH: %d", base_name, len(sensors), len(ph_sensors))
+    _LOGGER.debug("sensor temperature: %d, pH: %d", len(sensors), len(ph_sensors))
     async_add_entities(sensors)
     async_add_entities(ph_sensors)
     async_add_entities([ReefPiBaicInfo(coordinator)])
@@ -56,21 +55,13 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:fishbowl-outline"
+    _attr_name = None
 
     @property
     def device_info(self):
         return self.api.device_info
-
-    @property
-    def icon(self):
-        return "mdi:fishbowl-outline"
-
-    @property
-    def name(self):
-        """Return the name of the sensor"""
-        if not self.api.info or not "name" in self.api.info:
-            return "ReefPiBaicInfo"
-        return self.api.info["name"]
 
     @property
     def unique_id(self):
@@ -104,6 +95,7 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_has_entity_name = True
 
     @property
     def device_info(self):
@@ -148,13 +140,13 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
         self._name = name
         self.api = coordinator
 
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:ph"
+    _attr_native_unit_of_measurement = DEGREE
+
     @property
     def device_info(self):
         return self.api.device_info
-
-    @property
-    def icon(self):
-        return "mdi:ph"
 
     @property
     def name(self):
@@ -165,11 +157,6 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     def unique_id(self):
         """Return a unique_id for this entity."""
         return f"{self.coordinator.unique_id}_ph_{self._id}"
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return DEGREE
 
     @property
     def available(self):
@@ -238,6 +225,9 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
         self._show_pump = show_pump
         self.api = coordinator
 
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:format-color-fill"
+
     @property
     def device_class(self):
         if not self._show_pump:
@@ -279,7 +269,4 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self):
         return self.api.ato_states[self._id]
 
-    @property
-    def icon(self):
-        return "mdi:format-color-fill"
 

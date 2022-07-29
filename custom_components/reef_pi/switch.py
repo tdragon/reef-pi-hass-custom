@@ -8,21 +8,20 @@ from .const import _LOGGER, DOMAIN
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an outlets entity from a config_entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    base_name = coordinator.info["name"] + ": "
     equipment = [
-        ReefPiSwitch(id, base_name + outlet["name"], coordinator)
+        ReefPiSwitch(id, outlet["name"], coordinator)
         for id, outlet in coordinator.equipment.items()
     ]
     async_add_entities(equipment)
 
     ato = [
-        ReefPiAtoSwitch(id, base_name + ato["name"] + " Enabled", coordinator)
+        ReefPiAtoSwitch(id, ato["name"] + " Enabled", coordinator)
         for id, ato in coordinator.ato.items()
     ]
     async_add_entities(ato)
 
     timers = [
-        ReefPiTimers(id, base_name + timer["name"], coordinator)
+        ReefPiTimers(id, timer["name"], coordinator)
         for id, timer in coordinator.timers.items()
     ]
     async_add_entities(timers)
@@ -36,6 +35,7 @@ class ReefPiTimers(CoordinatorEntity, SwitchEntity):
         self.api = coordinator
 
     _attr_device_class = SwitchDeviceClass.SWITCH
+    _attr_has_entity_name = True
 
     @property
     def device_info(self):
@@ -92,6 +92,7 @@ class ReefPiSwitch(CoordinatorEntity, SwitchEntity):
         self.api = coordinator
 
     _attr_device_class = SwitchDeviceClass.OUTLET
+    _attr_has_entity_name = True
 
     @property
     def device_info(self):
@@ -148,6 +149,7 @@ class ReefPiAtoSwitch(CoordinatorEntity, SwitchEntity):
         self.api = coordinator
 
     _attr_device_class = SwitchDeviceClass.SWITCH
+    _attr_has_entity_name = True
 
     @property
     def device_info(self):
