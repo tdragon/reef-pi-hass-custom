@@ -1,6 +1,6 @@
 {
   "domain": "reef_pi",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "name": "Reef PI Integration",
   "config_flow": true,
   "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
@@ -13,7 +13,7 @@
   ],
   "dependencies": [],
   "codeowners": [
-    "@tdragon"
+    "@tdragon", "@alex255"
   ],
   "iot_class": "local_polling"
 }
