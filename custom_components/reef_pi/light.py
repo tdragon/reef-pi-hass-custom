@@ -77,7 +77,10 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn the light on."""
-        brightness = kwargs[ATTR_BRIGHTNESS]
+        if ATTR_BRIGHTNESS in kwargs:
+            brightness = kwargs[ATTR_BRIGHTNESS]
+        else:
+            brightness = 255
         percent_brightness = ceil(100 * brightness / 255.0)
 
         _LOGGER.debug("Setting brightness: %s %s%%", brightness, percent_brightness)
