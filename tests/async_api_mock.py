@@ -110,7 +110,7 @@ def mock_ph78(mock, url = REEF_MOCK_URL):
 
 def mock_info(mock, url = REEF_MOCK_URL):
     mock.get(f'{url}/api/info').respond(200, json={
-            'name': 'reef-pi',
+            'name': 'Reef PI',
             'ip': '192.168.1.123',
             'current_time': 'Sat Jun 12 22:05:32',
             'uptime': '1 week ago',
