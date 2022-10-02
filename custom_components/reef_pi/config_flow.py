@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN
+from .const import DOMAIN, UPDATE_INTERVAL_MIN
 
 from .async_api import ReefApi, CannotConnect, InvalidAuth
 
@@ -21,7 +21,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema({
     vol.Required("host", default="https://127.0.0.1"): str,
     vol.Required("username", default="reef-pi"): str,
     vol.Required("password", default=""): str,
-    vol.Optional("verify", default=False): bool
+    vol.Optional("verify", default=False): bool,
+    vol.Optional("update_interval", default = UPDATE_INTERVAL_MIN.total_seconds()): int
 })
 
 

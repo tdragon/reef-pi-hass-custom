@@ -9,6 +9,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
 from async_timeout import timeout
+from datetime import timedelta
 
 import json
 from datetime import datetime
@@ -17,11 +18,12 @@ from .const import (
     _LOGGER,
     DOMAIN,
     HOST,
-    USER,
+    USER,   
     PASSWORD,
     VERIFY_TLS,
     UPDATE_INTERVAL_MIN,
-    MANUFACTURER
+    UPDATE_INTERVAL_CFG,
+    MANUFACTURER,
 )
 
 from .async_api import ReefApi, CannotConnect, InvalidAuth
@@ -97,6 +99,13 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.unique_id = config_entry.data[HOST]
         self.hass = hass
 
+        if UPDATE_INTERVAL_CFG in config_entry.data.keys():
+            self.update_interval = timedelta(seconds = config_entry.data[UPDATE_INTERVAL_CFG])
+        else:
+            self.update_interval = UPDATE_INTERVAL_MIN
+
+        _LOGGER.debug(f"Update interval {self.update_interval.total_seconds()} seconds")
+
         self.has_temperature = False
         self.has_equipment = False
         self.has_ph = False
@@ -121,7 +130,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.timers = {}
 
         super().__init__(
-            hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL_MIN
+            hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
 
     @property
@@ -240,10 +249,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     ph = await self.api.ph(probe['id'])
                     all_ph[probe["id"]] = {
                         "name": probe["name"],
-                        "value": round(ph["value"], 2) if ph["value"] else None,
+                        "value": round(ph["value"], 4) if ph["value"] else None,
                         "attributes": probe
                     }
                 self.ph = all_ph
+                _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
 
     async def update_lights(self):
         if self.has_lighs:

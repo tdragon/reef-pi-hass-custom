@@ -10,6 +10,7 @@ HOST = "host"
 USER = "username"
 PASSWORD = "password"
 VERIFY_TLS = "verify"
+UPDATE_INTERVAL_CFG="update_interval"
 UPDATE_INTERVAL_MIN = timedelta(minutes=1)
 TIMEOUT_API_SEC = 1
 
