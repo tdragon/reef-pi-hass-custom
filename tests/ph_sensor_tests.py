@@ -22,10 +22,11 @@ async def async_api_mock_instance():
 
         with open(os.path.join(PAYLOAD_DIR, "ph_readings.json"), "rt") as payload:
             ph_readings = json.loads(payload.read())
+            base_number = len(ph_readings['current']) - 3
 
             mock.get(f'{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/readings').mock(side_effect=lambda request, route:
                 httpx.Response(200, json={
-                    'current': ph_readings['current'][0:route.call_count+1],
+                    'current': ph_readings['current'][0:route.call_count+base_number],
                     'historical': ph_readings['historical']}))
         yield mock
 
@@ -59,11 +60,11 @@ async def test_ph(hass, async_api_mock_instance):
     assert state
     assert state.state == '6.8389'
     assert state.name == 'Reef PI pH'
-    assert state.attributes["time"].isoformat() == "2022-11-23T16:18:00"
-    assert await waitFor(lambda: hass.states.get("sensor.reef_pi_ph").state, '6.849', 4)
+    assert state.attributes["time"].isoformat() == "2022-11-24T19:39:00"
+    await waitFor(lambda: hass.states.get("sensor.reef_pi_ph").state, '6.849', 10)
     state = hass.states.get("sensor.reef_pi_ph")
-    assert state.state == '6.849'
-    assert state.attributes["time"].isoformat() == "2022-11-23T16:21:00"
+    assert state.state == '6.8591'
+    assert state.attributes["time"].isoformat() == "2022-11-24T19:40:00"
 
 async def test_ph_without_current(hass, async_api_mock_instance):
     entry = MockConfigEntry(domain=DOMAIN, data={

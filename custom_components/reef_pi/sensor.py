@@ -143,6 +143,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:ph"
     _attr_native_unit_of_measurement = DEGREE
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def device_info(self):

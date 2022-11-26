@@ -3,6 +3,9 @@
 import asyncio
 import httpx
 import json
+from datetime import datetime
+
+REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
 class ReefApi:
     def __init__(self, host, verify=False, timeout_sec=15):
@@ -89,11 +92,14 @@ class ReefApi:
         return await self._get("phprobes")
 
     async def ph(self, id):
+
+        get_time = lambda x: datetime.strptime(x['time'], REEFPI_DATETIME_FORMAT) if 'time' in x.keys() else datetime.datetime(0,0,0)
+
         readings = await self._get(f"phprobes/{id}/readings")
         if readings and 'current' in readings.keys() and len(readings['current']):
-            return readings['current'][-1]
+            return sorted(readings['current'], key=get_time)[-1]
         if readings and 'historical' in readings.keys() and len(readings['historical']):
-            return readings['historical'][-1]
+            return sorted(readings['historical'], key=get_time)[-1]
         return {'value': None}
 
     async def pumps(self):
