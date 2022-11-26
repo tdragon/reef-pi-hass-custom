@@ -1,0 +1,29 @@
+[
+    {
+        "id": "2",
+        "name": "pH",
+        "enable": true,
+        "period": 60,
+        "analog_input": "1",
+        "control": false,
+        "notify": {
+            "enable": false,
+            "min": 0,
+            "max": 0
+        },
+        "upper_eq": "",
+        "downer_eq": "",
+        "min": 0,
+        "max": 0,
+        "hysteresis": 0,
+        "is_macro": false,
+        "one_shot": false,
+        "chart": {
+            "ymin": 4,
+            "ymax": 7,
+            "color": "#2a00ff",
+            "unit": "pH"
+        },
+        "transformer": ""
+    }
+]
