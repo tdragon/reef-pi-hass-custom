@@ -47,8 +47,8 @@ async def test_ph(reef_pi_instance):
     mock, reef = reef_pi_instance
     async_api_mock.mock_ph6(mock)
     reading = await reef.ph('6')
-    assert 8.194366197183099 == reading['value']
-    mock.get(f'{async_api_mock.REEF_MOCK_URL}/api/phprobes/unknown/readings').respond(404)
+    assert 6.31 == reading['value']
+    mock.get(f'{async_api_mock.REEF_MOCK_URL}/api/phprobes/unknown/read').respond(404)
     assert None == (await reef.ph('unknown'))['value']
 
 

@@ -91,7 +91,7 @@ class ReefApi:
     async def phprobes(self):
         return await self._get("phprobes")
 
-    async def ph(self, id):
+    async def ph_readings(self, id):
 
         get_time = lambda x: datetime.strptime(x['time'], REEFPI_DATETIME_FORMAT) if 'time' in x.keys() else datetime.datetime(0,0,0)
 
@@ -100,6 +100,15 @@ class ReefApi:
             return sorted(readings['current'], key=get_time)[-1]
         if readings and 'historical' in readings.keys() and len(readings['historical']):
             return sorted(readings['historical'], key=get_time)[-1]
+        return {'value': None}
+
+    async def ph(self, id):
+        try:
+            value = await self._get(f"phprobes/{id}/read")
+            if value:
+                return {'value': float(value)}
+        except Exception:
+            pass
         return {'value': None}
 
     async def pumps(self):

@@ -60,53 +60,11 @@ def mock_phprobes(mock, url = REEF_MOCK_URL):
             }])
 
 def mock_ph6(mock, url = REEF_MOCK_URL):
-    mock.get(f'{url}/api/phprobes/6/readings').respond(200, json={
-            "current":[
-                {"value":8.191549295774648,"up":0,"down":15,"time":"Jun-08-02:07, 2021"},
-                {"value":8.24507042253521,"up":0,"down":15,"time":"Jun-08-02:08, 2021"},
-                {"value":8.185915492957747,"up":0,"down":15,"time":"Jun-08-02:08, 2021"},
-                {"value":8.225352112676056,"up":0,"down":15,"time":"Jun-08-02:08, 2021"},
-                {"value":8.216901408450704,"up":0,"down":15,"time":"Jun-08-02:08, 2021"},
-                {"value":8.216901408450704,"up":0,"down":15,"time":"Jun-08-02:09, 2021"},
-                {"value":8.264788732394367,"up":0,"down":15,"time":"Jun-08-02:09, 2021"},
-                {"value":8.23943661971831,"up":0,"down":15,"time":"Jun-08-02:09, 2021"},
-                {"value":8.230985915492958,"up":0,"down":15,"time":"Jun-08-02:09, 2021"},
-                {"value":8.191549295774648,"up":0,"down":15,"time":"Jun-08-02:10, 2021"},
-                {"value":8.228169014084507,"up":0,"down":15,"time":"Jun-08-02:10, 2021"},
-                {"value":8.256338028169015,"up":0,"down":15,"time":"Jun-08-02:10, 2021"},
-                {"value":8.24507042253521,"up":0,"down":15,"time":"Jun-08-02:10, 2021"},
-                {"value":8.177464788732394,"up":0,"down":15,"time":"Jun-08-02:11, 2021"},
-                {"value":8.177464788732394,"up":0,"down":15,"time":"Jun-08-02:11, 2021"},
-                {"value":8.261971830985916,"up":0,"down":15,"time":"Jun-08-02:11, 2021"},
-                {"value":8.270422535211267,"up":0,"down":15,"time":"Jun-08-02:11, 2021"},
-                {"value":8.273239436619718,"up":0,"down":15,"time":"Jun-08-02:12, 2021"},
-                {"value":8.236619718309859,"up":0,"down":15,"time":"Jun-08-02:12, 2021"},
-                {"value":8.194366197183099,"up":0,"down":15,"time":"Jun-08-02:12, 2021"},
-                {"value":8.194366197183099,"up":0,"down":15,"time":"Jun-08-02:12, 2021"},
-                {"value":8.253521126760564,"up":0,"down":15,"time":"Jun-08-02:13, 2021"},
-                {"value":8.270422535211267,"up":0,"down":15,"time":"Jun-08-02:13, 2021"},
-                {"value":8.194366197183099,"up":0,"down":15,"time":"Jun-08-02:13, 2021"}],
-            "historical":[
-                {"value":8.14,"up":3000,"down":0,"time":"Mar-07-13:00, 2021"},
-                {"value":8.15,"up":3420,"down":0,"time":"Mar-07-14:00, 2021"},
-                {"value":8.14,"up":2760,"down":0,"time":"Mar-07-15:00, 2021"},
-                {"value":8.17,"up":165,"down":135,"time":"Mar-07-16:00, 2021"},
-                {"value":8.21,"up":0,"down":2085,"time":"Mar-07-17:00, 2021"},
-                {"value":8.24,"up":0,"down":3555,"time":"Mar-07-18:00, 2021"},
-                {"value":8.26,"up":0,"down":3600,"time":"Mar-07-19:00, 2021"},
-                {"value":8.26,"up":0,"down":3600,"time":"Mar-07-20:00, 2021"},
-                {"value":8.26,"up":0,"down":3600,"time":"Mar-07-21:00, 2021"},
-                {"value":8.24,"up":0,"down":3600,"time":"Mar-07-22:00, 2021"},
-                {"value":8.22,"up":0,"down":3600,"time":"Mar-07-23:00, 2021"}]
-        })
+    mock.get(f'{url}/api/phprobes/6/read').respond(200, json="6.31")
 
 def mock_ph78(mock, url = REEF_MOCK_URL):
-    mock.get(f'{url}/api/phprobes/7/readings').respond(200, json={
-            "historical":[
-                {"value":4.0,"up":0,"down":15,"time":"Jun-08-02:07, 2021"},
-                {"value":5.1,"up":0,"down":15,"time":"Jun-08-02:08, 2021"}]})
-
-    mock.get(f'{url}/api/phprobes/8/readings').respond(200, json={})
+    mock.get(f'{url}/api/phprobes/7/read').respond(200, json="7.23")
+    mock.get(f'{url}/api/phprobes/8/read').respond(200, json="")
 
 def mock_info(mock, url = REEF_MOCK_URL):
     mock.get(f'{url}/api/info').respond(200, json={

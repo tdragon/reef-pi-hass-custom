@@ -247,13 +247,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 all_ph = {}
                 for probe in probes:
                     ph = await self.api.ph(probe['id'])
-                    attributes = probe
-                    if "time" in ph.keys():
-                        attributes["time"] = datetime.strptime(ph['time'], REEFPI_DATETIME_FORMAT)
                     all_ph[probe["id"]] = {
                         "name": probe["name"],
                         "value": round(ph["value"], 4) if ph["value"] else None,
-                        "attributes": attributes
+                        "attributes": probe
                     }
                 self.ph = all_ph
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
