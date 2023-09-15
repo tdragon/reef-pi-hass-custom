@@ -7,6 +7,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.entity import DeviceInfo
 
 from async_timeout import timeout
 from datetime import timedelta
@@ -134,22 +135,18 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         )
 
     @property
-    def device_info(self):
-        info = {
-            'identifiers': {
+    def device_info(self) -> DeviceInfo:
+
+        return DeviceInfo(
+            configuration_url = self.configuration_url,
+            identifiers={
                 (DOMAIN, self.unique_id)
             },
-            'default_name': self.default_name,
-            'default_manufacturer': MANUFACTURER,
-            "default_model" : "Reef PI",
-            "configuration_url": self.configuration_url
-        }
-        if self.info:
-            info['model'] = self.info["model"]
-            info['sw_version'] = self.info["version"]
-            info['name'] = self.info["name"]
-            info['default_name'] = self.info["name"]
-        return info
+            manufacturer = MANUFACTURER,
+            model = self.info["model"] if self.info["model"] else "Reef PI",
+            name = self.info["name"] if self.info["name"] else self.default_name,
+            sw_version = self.info["name"] if self.info["name"] else None,
+        )
 
     async def update_capabilities(self):
         _LOGGER.debug("Fetching capabilities")
