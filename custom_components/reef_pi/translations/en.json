@@ -14,10 +14,26 @@
                     "host": "Host",
                     "password": "Password",
                     "username": "Username",
-                    "verify": "Verify TLS certificate"
+                    "verify": "Verify TLS certificate",
+                    "update_interval": "Update interval"
                 }
             }
         }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "password": "Password",
+                    "username": "Username",
+                    "verify": "Verify TLS certificate",
+                    "update_interval": "Update interval",
+                    "disable_ph": "Disable pH sensor"
+                }
+            }
+        }
+
     },
     "title": "Reef-PI integration"
 }

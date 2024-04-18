@@ -7,23 +7,33 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
-from .const import DOMAIN, UPDATE_INTERVAL_MIN
+from .const import (
+    DISABLE_PH,
+    DOMAIN,
+    HOST,
+    PASSWORD,
+    UPDATE_INTERVAL_CFG,
+    UPDATE_INTERVAL_MIN,
+    USER,
+    VERIFY_TLS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("host", default="https://127.0.0.1"): str,  # type: ignore
-        vol.Required("username", default="reef-pi"): str,  # type: ignore
-        vol.Required("password", default=""): str,  # type: ignore
-        vol.Optional("verify", default=False): bool,  # type: ignore
+        vol.Required(HOST, default="https://127.0.0.1"): str,  # type: ignore
+        vol.Required(USER, default="reef-pi"): str,  # type: ignore
+        vol.Required(PASSWORD, default=""): str,  # type: ignore
+        vol.Optional(VERIFY_TLS, default=False): bool,  # type: ignore
         vol.Optional(
-            "update_interval", default=UPDATE_INTERVAL_MIN.total_seconds() # type: ignore
-        ): int,  
+            UPDATE_INTERVAL_CFG,
+            default=UPDATE_INTERVAL_MIN.total_seconds(),  # type: ignore
+        ): int,
     }
 )
 
@@ -49,7 +59,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> config_entries.ConfigFlowResult:
         """Handle the initial step."""
         if user_input is None:
             return self.async_show_form(
@@ -75,4 +85,46 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> ReefPiConfigFlowHandler:
+        return ReefPiConfigFlowHandler(config_entry)
+
+
+class ReefPiConfigFlowHandler(config_entries.OptionsFlow):
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, _user_input=None):
+        """Manage the options."""
+        return await self.async_step_user()
+
+    async def async_step_user(self, user_input=None) -> config_entries.ConfigFlowResult:
+        """Handle a flow initialized by the user."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        update_interval = self.config_entry.options.get(UPDATE_INTERVAL_CFG) 
+        if update_interval is None:
+            update_interval = self.config_entry.data.get(UPDATE_INTERVAL_CFG)
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        UPDATE_INTERVAL_CFG,
+                        default=update_interval,  # type: ignore
+                    ): int,
+                    vol.Optional(
+                        DISABLE_PH,
+                        default=self.config_entry.options.get(DISABLE_PH),  # type: ignore
+                    ): bool,
+                }
+            ),
         )

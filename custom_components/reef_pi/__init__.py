@@ -15,6 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .const import (
     _LOGGER,
+    DISABLE_PH,
     DOMAIN,
     HOST,
     MANUFACTURER,
@@ -98,14 +99,14 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.unique_id = config_entry.data[HOST]
         self.hass = hass
 
-        if UPDATE_INTERVAL_CFG in config_entry.data.keys():
-            self.update_interval = timedelta(
-                seconds=config_entry.data[UPDATE_INTERVAL_CFG]
-            )
-        else:
-            self.update_interval = UPDATE_INTERVAL_MIN
+        self.update_interval = UPDATE_INTERVAL_MIN
+        update_interval = config_entry.options.get(
+            UPDATE_INTERVAL_CFG
+        ) or config_entry.data.get(UPDATE_INTERVAL_CFG)
+        if update_interval is not None:
+            self.update_interval = timedelta(seconds=update_interval)
 
-        _LOGGER.debug(f"Update interval {self.update_interval.total_seconds()} seconds")
+        self.disable_ph = config_entry.options.get(DISABLE_PH) or False
 
         self.has_temperature = False
         self.has_equipment = False
@@ -147,14 +148,15 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def update_capabilities(self):
         _LOGGER.debug("Fetching capabilities")
+
+        def get_cabability(n):
+            return n in self.capabilities.keys() and self.capabilities[n]
+
         self.capabilities = await self.api.capabilities()
         if self.capabilities:
-            get_cabability = (
-                lambda n: n in self.capabilities.keys() and self.capabilities[n]
-            )
             self.has_temperature = get_cabability("temperature")
             self.has_equipment = get_cabability("equipment")
-            self.has_ph = get_cabability("ph")
+            self.has_ph = get_cabability("ph") and not self.disable_ph
             self.has_pumps = get_cabability("doser")
             self.has_ato = get_cabability("ato")
             self.has_timers = get_cabability("timers")
