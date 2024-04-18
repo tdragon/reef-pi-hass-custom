@@ -1,33 +1,29 @@
 """The ha_reef_pi integration."""
+
 from __future__ import annotations
+
+import json
+from datetime import datetime, timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from async_timeout import timeout
-from datetime import timedelta
-
-import json
-from datetime import datetime
-
+from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .const import (
     _LOGGER,
     DOMAIN,
     HOST,
-    USER,   
-    PASSWORD,
-    VERIFY_TLS,
-    UPDATE_INTERVAL_MIN,
-    UPDATE_INTERVAL_CFG,
     MANUFACTURER,
+    PASSWORD,
+    UPDATE_INTERVAL_CFG,
+    UPDATE_INTERVAL_MIN,
+    USER,
+    VERIFY_TLS,
 )
-
-from .async_api import ReefApi, CannotConnect, InvalidAuth
 
 # TODO List the platforms that you want to support.
 # For your initial PR, limit it to 1 platform.
@@ -37,7 +33,7 @@ REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
 
 async def async_setup(hass: HomeAssistant, config: Config) -> bool:
-    """Set up configured FMI."""
+    """Set up configured."""
     hass.data.setdefault(DOMAIN, {})
     return True
 
@@ -89,7 +85,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, session, config_entry):
         """Initialize."""
 
-        _LOGGER.debug("Using host %s for %s", config_entry.data[HOST], config_entry.title)
+        _LOGGER.debug(
+            "Using host %s for %s", config_entry.data[HOST], config_entry.title
+        )
         self.default_name = config_entry.title
         self.username = config_entry.data[USER]
         self.password = config_entry.data[PASSWORD]
@@ -101,7 +99,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.hass = hass
 
         if UPDATE_INTERVAL_CFG in config_entry.data.keys():
-            self.update_interval = timedelta(seconds = config_entry.data[UPDATE_INTERVAL_CFG])
+            self.update_interval = timedelta(
+                seconds=config_entry.data[UPDATE_INTERVAL_CFG]
+            )
         else:
             self.update_interval = UPDATE_INTERVAL_MIN
 
@@ -136,23 +136,22 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
     @property
     def device_info(self) -> DeviceInfo:
-
         return DeviceInfo(
-            configuration_url = self.configuration_url,
-            identifiers={
-                (DOMAIN, self.unique_id)
-            },
-            manufacturer = MANUFACTURER,
-            model = self.info["model"] if self.info["model"] else "Reef PI",
-            name = self.info["name"] if self.info["name"] else self.default_name,
-            sw_version = self.info["name"] if self.info["name"] else None,
+            configuration_url=self.configuration_url,
+            identifiers={(DOMAIN, self.unique_id)},
+            manufacturer=MANUFACTURER,
+            model=self.info["model"] if self.info["model"] else "Reef PI",
+            name=self.info["name"] if self.info["name"] else self.default_name,
+            sw_version=self.info["name"] if self.info["name"] else None,
         )
 
     async def update_capabilities(self):
         _LOGGER.debug("Fetching capabilities")
         self.capabilities = await self.api.capabilities()
         if self.capabilities:
-            get_cabability = lambda n: n in self.capabilities.keys() and self.capabilities[n]
+            get_cabability = (
+                lambda n: n in self.capabilities.keys() and self.capabilities[n]
+            )
             self.has_temperature = get_cabability("temperature")
             self.has_equipment = get_cabability("equipment")
             self.has_ph = get_cabability("ph")
@@ -186,7 +185,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     all_tcs[sensor["id"]] = {
                         "name": sensor["name"],
                         "fahrenheit": sensor["fahrenheit"],
-                        "temperature": (await self.api.temperature(sensor["id"]))["temperature"],
+                        "temperature": (await self.api.temperature(sensor["id"]))[
+                            "temperature"
+                        ],
                         "attributes": sensor,
                     }
                 self.tcs = all_tcs
@@ -194,15 +195,15 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def update_equipment(self):
         if self.has_equipment:
             _LOGGER.debug("Fetching equipment")
-            equipments = await self.api.equipment()
-            if equipments:
-                _LOGGER.debug("equipment updated: %s", json.dumps(equipments))
+            equipment = await self.api.equipment()
+            if equipment:
+                _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
                 all_equipment = {}
-                for equipment in equipments:
-                    all_equipment[equipment["id"]] = {
-                        "name": equipment["name"],
-                        "state": equipment["on"],
-                        "attributes": equipment
+                for device in equipment:
+                    all_equipment[device["id"]] = {
+                        "name": device["name"],
+                        "state": device["on"],
+                        "attributes": device,
                     }
                 self.equipment = all_equipment
 
@@ -217,7 +218,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     all_timers[timer["id"]] = {
                         "name": timer["name"],
                         "state": timer["enable"],
-                        "attributes": timer
+                        "attributes": timer,
                     }
                 self.timers = all_timers
 
@@ -231,7 +232,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 for macro in macros:
                     all_macros[macro["id"]] = {
                         "name": macro["name"],
-                        "attributes": macro
+                        "attributes": macro,
                     }
                 self.macros = all_macros
 
@@ -243,11 +244,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
                 all_ph = {}
                 for probe in probes:
-                    ph = await self.api.ph(probe['id'])
+                    ph = await self.api.ph(probe["id"])
                     all_ph[probe["id"]] = {
                         "name": probe["name"],
                         "value": round(ph["value"], 4) if ph["value"] else None,
-                        "attributes": probe
+                        "attributes": probe,
                     }
                 self.ph = all_ph
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
@@ -263,19 +264,19 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         light_id = light["id"]
                         if light["channels"][channel]["manual"]:
                             id = f"{light_id}-{channel}"
-                            light_name = light['name']
-                            channel_name = light['channels'][channel]['name']
-                            
-                            state =  (light["channels"][channel]["value"] > 0)                            
+                            light_name = light["name"]
+                            channel_name = light["channels"][channel]["name"]
+
+                            state = light["channels"][channel]["value"] > 0
                             all_light[id] = {
                                 "name": f"{light_name}-{channel_name}",
                                 "channel_id": channel,
                                 "light_id": light_id,
                                 "value": light["channels"][channel]["value"],
                                 "state": state,
-                                "attributes": light["channels"][channel]
+                                "attributes": light["channels"][channel],
                             }
-                        
+
                 self.lights = all_light
 
     async def update_inlets(self):
@@ -290,13 +291,13 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
                     if inlet_raw_value == 1:
                         inlet_value = True
-                    else: 
+                    else:
                         inlet_value = False
 
                     all_inlet[inlet["id"]] = {
                         "name": inlet["name"],
                         "state": inlet_value,
-                        "attributes": inlet
+                        "attributes": inlet,
                     }
                 self.inlets = all_inlet
 
@@ -311,20 +312,25 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     _LOGGER.debug("Pump %s: %s", key, json.dumps(pump))
                     if key not in result.keys():
                         result[key] = {
-                            "name": pump['name'],
+                            "name": pump["name"],
                             "time": datetime.fromtimestamp(0),
-                            "attributes": {
-                                pump['id']: pump
-                            }}
+                            "attributes": {pump["id"]: pump},
+                        }
                     else:
-                        result[key]['attributes'][pump['id']] = pump
+                        result[key]["attributes"][pump["id"]] = pump
 
-                    current = await self.api.pump(pump['id'])
-                    if current and "time" in current.keys() and "pump" in current.keys():
-                        time = datetime.strptime(current['time'], REEFPI_DATETIME_FORMAT)
-                        if time > result[key]['time']:
-                            result[key]['time'] = time
-                            result[key]['attributes']['duration'] = current['pump']
+                    current = await self.api.pump(pump["id"])
+                    if (
+                        current
+                        and "time" in current.keys()
+                        and "pump" in current.keys()
+                    ):
+                        time = datetime.strptime(
+                            current["time"], REEFPI_DATETIME_FORMAT
+                        )
+                        if time > result[key]["time"]:
+                            result[key]["time"] = time
+                            result[key]["attributes"]["duration"] = current["pump"]
             except Exception as ex:
                 _LOGGER.exception(ex)
             self.pumps = result
@@ -332,20 +338,24 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def update_atos(self):
         if self.has_ato:
             atos = await self.api.atos()
-            atos = {a['id']: a for a in atos}
+            atos = {a["id"]: a for a in atos}
             ato_states = {}
             for id in atos.keys():
-                ato_states[id] = {'ts': datetime.fromtimestamp(0), 'pump': 0}
+                ato_states[id] = {"ts": datetime.fromtimestamp(0), "pump": 0}
                 states = await self.api.ato(id)
-                ato_state = [s for s in states if s['pump'] != 0]
+                ato_state = [s for s in states if s["pump"] != 0]
                 if len(ato_state) > 0:
                     ato_states[id] = ato_state[-1]
-                    ato_states[id]['ts'] = datetime.strptime(ato_states[id]['time'], REEFPI_DATETIME_FORMAT)
+                    ato_states[id]["ts"] = datetime.strptime(
+                        ato_states[id]["time"], REEFPI_DATETIME_FORMAT
+                    )
                 else:
                     if len(states) > 0:
                         ato_states[id] = states[-1]
-                        ato_states[id]['ts'] = datetime.strptime(ato_states[id]['time'], REEFPI_DATETIME_FORMAT)
-                    
+                        ato_states[id]["ts"] = datetime.strptime(
+                            ato_states[id]["time"], REEFPI_DATETIME_FORMAT
+                        )
+
             self.ato = atos
             self.ato_states = ato_states
 
@@ -362,7 +372,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_temperature()
             await self.update_equipment()
             await self.update_ph()
-            await self.update_pumps()    
+            await self.update_pumps()
             await self.update_atos()
             await self.update_inlets()
             await self.update_lights()
@@ -379,9 +389,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.equipment[id]["state"] = state
 
     async def light_control(self, id, value):
-        await self.api.light_update(self.lights[id]["light_id"],self.lights[id]["channel_id"], value)
+        await self.api.light_update(
+            self.lights[id]["light_id"], self.lights[id]["channel_id"], value
+        )
         self.lights[id]["value"] = value
-        if value > 0 :
+        if value > 0:
             self.lights[id]["state"] = True
         else:
             self.lights[id]["state"] = False

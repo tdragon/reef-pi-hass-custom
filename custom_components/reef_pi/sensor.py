@@ -1,17 +1,19 @@
 """Platform for reef-pi sensor integration."""
-from homeassistant.const import (
-    UnitOfTemperature,
-    DEGREE)
-
-from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.util import slugify
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.typing import StateType
-
-from .const import _LOGGER, DOMAIN, MANUFACTURER
 
 from datetime import datetime
+
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.const import DEGREE, UnitOfTemperature
+from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
+
+from .const import _LOGGER, DOMAIN
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add multiple entity from a config_entry."""
@@ -21,8 +23,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, tcs in coordinator.tcs.items()
     ]
     ph_sensors = [
-        ReefPiPh(id, ph["name"], coordinator)
-        for id, ph in coordinator.ph.items()
+        ReefPiPh(id, ph["name"], coordinator) for id, ph in coordinator.ph.items()
     ]
     pumps = [
         ReefPiPump(id, pump["name"], coordinator)
@@ -57,6 +58,7 @@ class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_icon = "mdi:fishbowl-outline"
     _attr_name = None
+    _attr_should_poll: bool = True
 
     @property
     def device_info(self):
@@ -131,6 +133,7 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self):
         return self.api.tcs[self._id]["attributes"]
 
+
 class ReefPiPh(CoordinatorEntity, SensorEntity):
     def __init__(self, id, name, coordinator):
         """Initialize the sensor."""
@@ -172,6 +175,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     def extra_state_attributes(self):
         return self.api.ph[self._id]["attributes"]
 
+
 class ReefPiPump(CoordinatorEntity, SensorEntity):
     def __init__(self, id, name, coordinator):
         """Initialize the sensor."""
@@ -179,7 +183,9 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         self._id = id
         self._name = name
         self.api = coordinator
-        self.entity_id = "sensor." + slugify(f"""{coordinator.info["name"]}_pump_{id}""".lower())
+        self.entity_id = "sensor." + slugify(
+            f"""{coordinator.info["name"]}_pump_{id}""".lower()
+        )
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_has_entity_name = True
@@ -205,7 +211,9 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
     @property
     def available(self):
         """Return if available"""
-        return self._id in self.api.pumps.keys() and self.api.pumps[self._id]["time"] != datetime.fromtimestamp(0)
+        return self._id in self.api.pumps.keys() and self.api.pumps[self._id][
+            "time"
+        ] != datetime.fromtimestamp(0)
 
     @property
     def state(self):
@@ -215,6 +223,7 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.pumps[self._id]["attributes"]
+
 
 class ReefPiATO(CoordinatorEntity, SensorEntity):
     def __init__(self, id, name, show_pump, coordinator):
@@ -251,11 +260,12 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
         else:
             return f"{self.coordinator.unique_id}_ato_{self._id}_last_run"
 
-
     @property
     def available(self):
         """Return if available"""
-        return self._id in self.api.ato_states.keys() and self.api.ato_states[self._id]["ts"] != datetime.fromtimestamp(0)
+        return self._id in self.api.ato_states.keys() and self.api.ato_states[self._id][
+            "ts"
+        ] != datetime.fromtimestamp(0)
 
     @property
     def state(self):
@@ -268,5 +278,3 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ato_states[self._id]
-
-
