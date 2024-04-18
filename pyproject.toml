@@ -22,3 +22,8 @@ dev = [
     "pytest-homeassistant-custom-component>=0.13.114",
     "pytest-asyncio>=0.23.6",
 ]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+

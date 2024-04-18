@@ -1,7 +1,6 @@
 """Platform for reef-pi sensor integration."""
 from homeassistant.const import (
-    TEMP_CELSIUS,
-    TEMP_FAHRENHEIT,
+    UnitOfTemperature,
     DEGREE)
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
@@ -46,7 +45,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
-    _attr_native_unit_of_measurement = TEMP_CELSIUS
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     def __init__(self, coordinator):
         """Initialize the sensor."""
@@ -115,8 +114,8 @@ class ReefPiTemperature(CoordinatorEntity, SensorEntity):
     def native_unit_of_measurement(self):
         """Return the unit of measurement."""
         if self.available and self.api.tcs[self._id]["fahrenheit"]:
-            return TEMP_FAHRENHEIT
-        return TEMP_CELSIUS
+            return UnitOfTemperature.FAHRENHEIT
+        return UnitOfTemperature.CELSIUS
 
     @property
     def available(self):
