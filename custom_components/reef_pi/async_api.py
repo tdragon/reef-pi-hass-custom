@@ -1,4 +1,4 @@
-"""Reef Pi api wrapper """
+"""Reef Pi api wrapper"""
 
 import asyncio
 import httpx
@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
+
 
 class ReefApi:
     def __init__(self, host, verify=False, timeout_sec=15):
@@ -28,7 +29,7 @@ class ReefApi:
                 auth = {"user": user, "password": password}
                 url = f"{self.host}/auth/signin"
                 response = await client.post(url, json=auth, timeout=self.timeout)
-        
+
                 if response.status_code == 200:
                     self.cookies = {"auth": response.cookies["auth"]}
         except httpx.HTTPError as exc:
@@ -44,7 +45,8 @@ class ReefApi:
         try:
             async with httpx.AsyncClient(verify=self.verify) as client:
                 url = f"{self.host}/api/{api}"
-                response = await client.get(url, cookies=self.cookies, timeout=self.timeout)
+                client.cookies = self.cookies
+                response = await client.get(url, timeout=self.timeout)
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
@@ -52,14 +54,15 @@ class ReefApi:
             return {}
         return json.loads(response.text)
 
-    async def _post(self, api, payload) -> dict:
+    async def _post(self, api, payload) -> bool:
         if not self.is_authenticated():
             raise InvalidAuth
 
         try:
             async with httpx.AsyncClient(verify=self.verify) as client:
                 url = f"{self.host}/api/{api}"
-                response = await client.post(url, json=payload, cookies=self.cookies, timeout=self.timeout)
+                client.cookies = self.cookies
+                response = await client.post(url, json=payload, timeout=self.timeout)
                 return response.status_code == 200
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
@@ -92,24 +95,27 @@ class ReefApi:
         return await self._get("phprobes")
 
     async def ph_readings(self, id):
-
-        get_time = lambda x: datetime.strptime(x['time'], REEFPI_DATETIME_FORMAT) if 'time' in x.keys() else datetime.datetime(0,0,0)
+        get_time = (
+            lambda x: datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
+            if "time" in x.keys()
+            else datetime.datetime(0, 0, 0)
+        )
 
         readings = await self._get(f"phprobes/{id}/readings")
-        if readings and 'current' in readings.keys() and len(readings['current']):
-            return sorted(readings['current'], key=get_time)[-1]
-        if readings and 'historical' in readings.keys() and len(readings['historical']):
-            return sorted(readings['historical'], key=get_time)[-1]
-        return {'value': None}
+        if readings and "current" in readings.keys() and len(readings["current"]):
+            return sorted(readings["current"], key=get_time)[-1]
+        if readings and "historical" in readings.keys() and len(readings["historical"]):
+            return sorted(readings["historical"], key=get_time)[-1]
+        return {"value": None}
 
     async def ph(self, id):
         try:
             value = await self._get(f"phprobes/{id}/read")
             if value:
-                return {'value': float(value)}
+                return {"value": float(value)}
         except Exception:
             pass
-        return {'value': None}
+        return {"value": None}
 
     async def pumps(self):
         return await self._get("doser/pumps")
@@ -132,7 +138,8 @@ class ReefApi:
         try:
             async with httpx.AsyncClient(verify=self.verify) as client:
                 url = f"{self.host}/api/inlets/{id}/read"
-                response = await client.post(url, json={}, cookies=self.cookies, timeout=self.timeout)
+                client.cookies = self.cookies
+                response = await client.post(url, json={}, timeout=self.timeout)
                 if not response.status_code == 200:
                     return {}
                 return json.loads(response.text)
@@ -144,10 +151,10 @@ class ReefApi:
 
     async def pump(self, id):
         readings = await self._get(f"doser/pumps/{id}/usage")
-        if readings and "current" in readings.keys() and len(readings['current']):
-            return readings['current'][-1]
-        if readings and "historical" in readings.keys() and len(readings['historical']):
-            return readings['historical'][-1]
+        if readings and "current" in readings.keys() and len(readings["current"]):
+            return readings["current"][-1]
+        if readings and "historical" in readings.keys() and len(readings["historical"]):
+            return readings["historical"][-1]
         return []
 
     async def atos(self):
@@ -155,10 +162,10 @@ class ReefApi:
 
     async def ato(self, id):
         readings = await self._get(f"atos/{id}/usage")
-        if readings and "current" in readings.keys() and len(readings['current']):
-            return readings['current']
-        if readings and "historical" in readings.keys() and len(readings['historical']):
-            return readings['historical']
+        if readings and "current" in readings.keys() and len(readings["current"]):
+            return readings["current"]
+        if readings and "historical" in readings.keys() and len(readings["historical"]):
+            return readings["historical"]
         return []
 
     async def ato_update(self, id, enable):
