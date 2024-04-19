@@ -6,9 +6,8 @@ from homeassistant.components.light import (
     LightEntity,
 )
 
-from .const import _LOGGER, DOMAIN, MANUFACTURER
+from .const import _LOGGER, DOMAIN
 
-from datetime import datetime
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add multiple entity from a config_entry."""
@@ -19,6 +18,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     ]
 
     async_add_entities(manual_lights)
+
 
 class ReefPiLight(CoordinatorEntity, LightEntity):
     def __init__(self, id, name, coordinator):

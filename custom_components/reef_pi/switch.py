@@ -1,9 +1,11 @@
 """Platform for reef-pi switch integration."""
+
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.components.switch import SwitchDeviceClass
 
-from .const import _LOGGER, DOMAIN
+from .const import DOMAIN
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an outlets entity from a config_entry."""
@@ -25,6 +27,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, timer in coordinator.timers.items()
     ]
     async_add_entities(timers)
+
 
 class ReefPiTimers(CoordinatorEntity, SwitchEntity):
     def __init__(self, id, name, coordinator):

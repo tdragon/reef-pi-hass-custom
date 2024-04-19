@@ -1,12 +1,12 @@
 """Platform for reef-pi sensor integration."""
+
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 
-from .const import _LOGGER, DOMAIN, MANUFACTURER
+from .const import DOMAIN
 
-from datetime import datetime
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add multiple entity from a config_entry."""
@@ -17,6 +17,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     ]
 
     async_add_entities(inlets)
+
 
 class ReefPiInlet(CoordinatorEntity, BinarySensorEntity):
     def __init__(self, id, name, coordinator):
@@ -56,4 +57,3 @@ class ReefPiInlet(CoordinatorEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.inlets[self._id]["attributes"]
-

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import logging
 
 from homeassistant.components.button import (
     ButtonEntity,
 )
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import _LOGGER, DOMAIN
+from .const import DOMAIN
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add an buttons entity from a config_entry."""
@@ -18,6 +18,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, macro in coordinator.macros.items()
     ]
     async_add_entities(macros)
+
 
 class ReefPiButton(CoordinatorEntity, ButtonEntity):
     def __init__(self, id, name, coordinator):
