@@ -1,0 +1,27 @@
+- id: pdm-lock-check
+  name: pdm-lock-check
+  description: run pdm lock --check to validate config
+  entry: pdm lock --check
+  language: python
+  language_version: python3
+  pass_filenames: false
+  files: ^pyproject.toml$
+- id: pdm-export
+  name: pdm-export-lock
+  description: export locked packages to requirements.txt or setup.py
+  entry: pdm export
+  language: python
+  language_version: python3
+  pass_filenames: false
+  files: ^pdm.lock$
+- id: pdm-sync
+  name: pdm-sync
+  description: sync current working set with pdm.lock
+  entry: pdm sync
+  language: python
+  language_version: python3
+  pass_filenames: false
+  stages:
+    - post-checkout
+    - post-merge
+  always_run: true
