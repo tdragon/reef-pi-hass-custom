@@ -1,20 +1,16 @@
 {
   "domain": "reef_pi",
-  "version": "0.3.8",
   "name": "Reef PI Integration",
   "config_flow": true,
-  "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
-  "issue_tracker": "https://github.com/tdragon/reef-pi-hass-custom/issues",
-  "ssdp": [],
-  "zeroconf": [],
-  "homekit": {},
-  "requirements": [
-    "httpx>=0.21.0"
-  ],
-  "dependencies": [],
   "codeowners": [
     "@tdragon",
     "@alex255"
   ],
-  "iot_class": "local_polling"
+  "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
+  "issue_tracker": "https://github.com/tdragon/reef-pi-hass-custom/issues",
+  "requirements": [
+    "httpx>=0.21.0"
+  ],
+  "iot_class": "local_polling",
+  "version": "0.3.8",
 }

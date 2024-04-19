@@ -33,12 +33,6 @@ PLATFORMS = ["sensor", "switch", "light", "binary_sensor", "button"]
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
 
-async def async_setup(hass: HomeAssistant, config: Config) -> bool:
-    """Set up configured."""
-    hass.data.setdefault(DOMAIN, {})
-    return True
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up ha_reef_pi from a config entry."""
 
