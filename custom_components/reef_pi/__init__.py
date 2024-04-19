@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
@@ -15,6 +17,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .const import (
     _LOGGER,
+    CONFIG_OPTIONS,
     DISABLE_PH,
     DOMAIN,
     HOST,
@@ -31,6 +34,15 @@ from .const import (
 PLATFORMS = ["sensor", "switch", "light", "binary_sensor", "button"]
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
+
+
+CONFIG_SCHEMA = vol.Schema({DOMAIN: CONFIG_OPTIONS}, extra=vol.ALLOW_EXTRA)
+
+
+async def async_setup(hass: HomeAssistant, config: Config) -> bool:
+    """Set up configured."""
+    hass.data.setdefault(DOMAIN, {})
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -12,30 +12,15 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .const import (
+    CONFIG_OPTIONS,
     DISABLE_PH,
     DOMAIN,
-    HOST,
-    PASSWORD,
     UPDATE_INTERVAL_CFG,
-    UPDATE_INTERVAL_MIN,
-    USER,
-    VERIFY_TLS,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(HOST, default="https://127.0.0.1"): str,  # type: ignore
-        vol.Required(USER, default="reef-pi"): str,  # type: ignore
-        vol.Required(PASSWORD, default=""): str,  # type: ignore
-        vol.Optional(VERIFY_TLS, default=False): bool,  # type: ignore
-        vol.Optional(
-            UPDATE_INTERVAL_CFG,
-            default=UPDATE_INTERVAL_MIN.total_seconds(),  # type: ignore
-        ): int,
-    }
-)
+STEP_USER_DATA_SCHEMA = vol.Schema(CONFIG_OPTIONS)
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -109,7 +94,7 @@ class ReefPiConfigFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        update_interval = self.config_entry.options.get(UPDATE_INTERVAL_CFG) 
+        update_interval = self.config_entry.options.get(UPDATE_INTERVAL_CFG)
         if update_interval is None:
             update_interval = self.config_entry.data.get(UPDATE_INTERVAL_CFG)
 
