@@ -408,7 +408,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def ato_update(self, id, enable):
         await self.api.ato_update(id, enable)
-        self.api.ato[id]["enable"] = enable
+        self.ato[id]["enable"] = enable
 
     async def run_script(self, id):
         await self.api.run_macro(id)

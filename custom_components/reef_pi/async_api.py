@@ -1,6 +1,6 @@
 """Reef Pi api wrapper"""
 
-import asyncio
+from typing import Any, Dict
 import httpx
 import json
 from datetime import datetime
@@ -38,7 +38,7 @@ class ReefApi:
         if response.status_code != 200:
             raise InvalidAuth
 
-    async def _get(self, api) -> dict:
+    async def _get(self, api) -> Any:
         if not self.is_authenticated():
             raise InvalidAuth
 
@@ -95,11 +95,12 @@ class ReefApi:
         return await self._get("phprobes")
 
     async def ph_readings(self, id):
-        get_time = (
-            lambda x: datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
-            if "time" in x.keys()
-            else datetime.datetime(0, 0, 0)
-        )
+        def get_time(x):
+            return (
+                datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
+                if "time" in x.keys()
+                else datetime(1900, 1, 1)
+            )
 
         readings = await self._get(f"phprobes/{id}/readings")
         if readings and "current" in readings.keys() and len(readings["current"]):
@@ -149,13 +150,13 @@ class ReefApi:
     async def light(self, id):
         return await self._get(f"lights/{id}")
 
-    async def pump(self, id):
+    async def pump(self, id) -> Dict[str, str]:
         readings = await self._get(f"doser/pumps/{id}/usage")
         if readings and "current" in readings.keys() and len(readings["current"]):
             return readings["current"][-1]
         if readings and "historical" in readings.keys() and len(readings["historical"]):
             return readings["historical"][-1]
-        return []
+        return {}
 
     async def atos(self):
         return await self._get("atos")
@@ -179,7 +180,7 @@ class ReefApi:
         return await self._post(f"lights/{id}", payload)
 
     async def macros(self):
-        return await self._get(f"macros")
+        return await self._get("macros")
 
     async def run_macro(self, id):
         return await self._post(f"macros/{id}/run", "")
