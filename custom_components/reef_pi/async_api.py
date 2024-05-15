@@ -7,7 +7,6 @@ from datetime import datetime
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
-
 class ReefApi:
     def __init__(self, host, verify=False, timeout_sec=15):
         self.host = host
@@ -111,13 +110,26 @@ class ReefApi:
 
     async def ph(self, id):
         try:
-            value = await self._get(f"phprobes/{id}/read")
-            if value:
-                return {"value": float(value)}
-        except Exception:
-            pass
-        return {"value": None}
+            data = await self._get(f"phprobes/{id}/readings")
+            
+            if data and "current" in data:
+                current_readings = data["current"]
+                
+                # Identify the most recent reading based on the timestamps in the readings
+                most_recent_reading = max(
+                    current_readings, 
+                    key=lambda x: datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
+                )
+                
+                return {"value": float(most_recent_reading["value"])}
 
+        except (ValueError, TypeError) as exc:
+            raise ApiError(f"Error parsing pH data for probe {id}: {exc}") from exc
+        except Exception as exc:
+            raise ApiError(f"Unexpected error for probe {id}: {exc}") from exc
+
+        return {"value": None}
+        
     async def pumps(self):
         return await self._get("doser/pumps")
 
