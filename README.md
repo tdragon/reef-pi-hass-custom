@@ -3,7 +3,6 @@
 
 [![GitHub release](https://img.shields.io/github/release/tdragon/reef-pi-hass-custom.svg)](https://github.com/tdragon/reef-pi-hass-custom/releases)
 ![Pytest](https://github.com/tdragon/reef-pi-hass-custom/workflows/pytest/badge.svg?branch=master)
-![Pytest](https://github.com/tdragon/reef-pi-hass-custom/workflows/hassfest/badge.svg?branch=master)
 ![GitHub All Releases](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/total)
 ![GitHub Latest Release](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/latest/total)
 
