@@ -19,7 +19,7 @@ distribution = false
 [tool.pdm.dev-dependencies]
 dev = [
     "pytest>=8.1.1",
-    "pytest-homeassistant-custom-component>=0.13.114",
+    "pytest-homeassistant-custom-component>=0.13.147",
     "pytest-asyncio>=0.23.6",
     "ruff>=0.4.0",
     "pre-commit>=3.7.0",
