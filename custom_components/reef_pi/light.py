@@ -1,10 +1,11 @@
 from math import ceil
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
-    SUPPORT_BRIGHTNESS,
+    ColorMode,
     LightEntity,
 )
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import _LOGGER, DOMAIN
 
@@ -42,7 +43,7 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
         return self._name
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Return if available"""
         return self._id in self.api.lights.keys()
 
@@ -55,20 +56,20 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
         return self.api.lights[self._id]["attributes"]
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         """Return true if light is on."""
         return self.api.lights[self._id]["state"]
 
     @property
-    def brightness(self):
+    def brightness(self) -> int | None:
         """Return the brightness of this light between 0..255."""
-        real_value = round(self.api.lights[self._id]["value"] * 2.55)
+        real_value = int(round(self.api.lights[self._id]["value"] * 2.55))
         return real_value
 
     @property
-    def supported_features(self):
-        """Return the supported features."""
-        return SUPPORT_BRIGHTNESS
+    def supported_color_modes(self) -> set[str] | None:
+        """Flag supported color modes."""
+        return {ColorMode.BRIGHTNESS}
 
     async def async_turn_off(self, **kwargs):
         """Turn the light off."""
