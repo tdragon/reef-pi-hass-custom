@@ -1,16 +1,17 @@
 """The ha_reef_pi integration."""
 
 from __future__ import annotations
+
 import json
 from datetime import datetime, timedelta
 
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.core import HomeAssistant
+from homeassistant.core_config import Config
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
