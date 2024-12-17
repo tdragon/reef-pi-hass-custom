@@ -16,7 +16,7 @@ def mock_capabilities(mock, ph=True, url=REEF_MOCK_URL):
             "health_check": False,
             "equipment": True,
             "timers": False,
-            "lighting": False,
+            "lighting": True,
             "temperature": True,
             "ato": True,
             "camera": False,
@@ -122,6 +122,25 @@ def mock_atos(mock, url=REEF_MOCK_URL, empty_usage=False):
         )
 
 
+def mock_lights(mock, url=REEF_MOCK_URL):
+    mock.get(f"{url}/api/lights").respond(
+        200,
+        json=[
+            {
+                "id": "1",
+                "channels": {
+                    "red": {
+                        "manual": True,
+                        "name": "Red",
+                        "value": 0.5,
+                    }
+                },
+                "name": "ReefPi Light",
+            },
+        ],
+    )
+
+
 def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
     mock_signin(mock)
     mock_capabilities(mock)
@@ -130,6 +149,7 @@ def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
     mock_ph6(mock)
     mock_ph78(mock)
     mock_atos(mock, empty_usage=not has_ato_usage)
+    mock_lights(mock)
 
     mock.get(f"{url}/api/doser/pumps").respond(
         200,
