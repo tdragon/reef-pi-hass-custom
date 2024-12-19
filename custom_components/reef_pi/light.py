@@ -71,6 +71,11 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
         """Flag supported color modes."""
         return {ColorMode.BRIGHTNESS}
 
+    @property
+    def color_mode(self) -> str | None:
+        """Return the color mode of the light."""
+        return ColorMode.BRIGHTNESS
+
     async def async_turn_off(self, **kwargs):
         """Turn the light off."""
         await self.api.light_control(self._id, 0)
