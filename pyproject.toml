@@ -1,6 +1,6 @@
 [project]
 name = "reef-pi-hass-custom"
-version = "0.3.10"
+version = "0.3.13"
 description = "HomeAssistant Reef PI Integration"
 authors = [
     {name = "tdragon", email = "1210261+tdragon@users.noreply.github.com"},
