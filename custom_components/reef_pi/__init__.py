@@ -249,7 +249,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
                 all_ph = {}
                 for probe in probes:
-                    ph = await self.api.ph(probe["id"])
+                    ph = await self.api.ph_readings(probe["id"])
                     all_ph[probe["id"]] = {
                         "name": probe["name"],
                         "value": round(ph["value"], 4) if ph["value"] else None,

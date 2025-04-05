@@ -1,11 +1,14 @@
 """Reef Pi api wrapper"""
 
-from typing import Any, Dict
-import httpx
 import json
+import logging
 from datetime import datetime
+from typing import Any, Dict
+
+import httpx
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
+logger = logging.getLogger(__name__)
 
 
 class ReefApi:
@@ -94,20 +97,22 @@ class ReefApi:
     async def phprobes(self):
         return await self._get("phprobes")
 
-    async def ph_readings(self, id):
-        def get_time(x):
-            return (
-                datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
-                if "time" in x.keys()
-                else datetime(1900, 1, 1)
-            )
+    async def ph_readings(self, id: int):
+        def get_time(x: dict[str, str]):
+            try:
+                return datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
+            except Exception as e:
+                logger.error(f"Error parsing time: {e}")
+                return datetime(1900, 1, 1)
+
+        def get_latest_value(x: list[dict[str, str]] | None):
+            if not x:
+                return {"value": None}
+            latest = sorted(x, key=get_time)[-1].get("value")
+            return {"value": float(latest) if latest else None}
 
         readings = await self._get(f"phprobes/{id}/readings")
-        if readings and "current" in readings.keys() and len(readings["current"]):
-            return sorted(readings["current"], key=get_time)[-1]
-        if readings and "historical" in readings.keys() and len(readings["historical"]):
-            return sorted(readings["historical"], key=get_time)[-1]
-        return {"value": None}
+        return get_latest_value(readings.get("current"))
 
     async def ph(self, id):
         try:

@@ -1,8 +1,10 @@
 import logging
+
 import pytest
+import respx
+
 from custom_components.reef_pi import async_api
 
-import respx
 from . import async_api_mock
 
 log = logging.getLogger(__name__)
@@ -54,8 +56,8 @@ async def test_probes(reef_pi_instance):
 async def test_ph(reef_pi_instance):
     mock, reef = reef_pi_instance
     async_api_mock.mock_ph6(mock)
-    reading = await reef.ph("6")
-    assert 6.31 == reading["value"]
+    reading = await reef.ph_readings("6")
+    assert 6.66 == reading["value"]
     mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/unknown/read").respond(404)
     assert (await reef.ph("unknown"))["value"] is None
 

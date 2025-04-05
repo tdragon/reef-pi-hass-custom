@@ -1,6 +1,11 @@
+import json
+import os
+
 REEF_MOCK_URL = "http://192.168.1.123"
 REEF_MOCK_USER = "reef_pi"
 REEF_MOCK_PASSWORD = "reef_password"
+
+PAYLOAD_DIR = os.path.join(os.getcwd(), "tests/payloads")
 
 
 def mock_signin(mock, url=REEF_MOCK_URL):
@@ -50,27 +55,17 @@ def mock_phprobes(mock, url=REEF_MOCK_URL):
                 "one_shot": False,
                 "chart": {"ymin": 0, "ymax": 0, "color": "", "unit": ""},
             },
-            {
-                "id": "7",
-                "name": "pH No current",
-                "enable": True,
-            },
-            {
-                "id": "8",
-                "name": "pH No history",
-                "enable": True,
-            },
         ],
     )
 
 
 def mock_ph6(mock, url=REEF_MOCK_URL):
-    mock.get(f"{url}/api/phprobes/6/read").respond(200, json="6.31")
-
-
-def mock_ph78(mock, url=REEF_MOCK_URL):
-    mock.get(f"{url}/api/phprobes/7/read").respond(200, json="7.23")
-    mock.get(f"{url}/api/phprobes/8/read").respond(200, json="")
+    with open(os.path.join(PAYLOAD_DIR, "ph_readings.json"), "rt") as payload:
+        ph_readings = json.loads(payload.read())
+        mock.get(f"{url}/api/phprobes/6/readings").respond(
+            200,
+            json=ph_readings,
+        )
 
 
 def mock_info(mock, url=REEF_MOCK_URL):
@@ -147,7 +142,6 @@ def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
     mock_info(mock)
     mock_phprobes(mock)
     mock_ph6(mock)
-    mock_ph78(mock)
     mock_atos(mock, empty_usage=not has_ato_usage)
     mock_lights(mock)
 
