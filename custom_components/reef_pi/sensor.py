@@ -40,12 +40,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("sensor temperature: %d, pH: %d", len(sensors), len(ph_sensors))
     async_add_entities(sensors)
     async_add_entities(ph_sensors)
-    async_add_entities([ReefPiBaicInfo(coordinator)])
+    async_add_entities([ReefPiBasicInfo(coordinator)])
     async_add_entities(pumps)
     async_add_entities(atos)
 
 
-class ReefPiBaicInfo(CoordinatorEntity, SensorEntity):
+class ReefPiBasicInfo(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     def __init__(self, coordinator):

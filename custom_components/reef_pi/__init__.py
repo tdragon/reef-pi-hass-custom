@@ -117,7 +117,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.has_pumps = False
         self.has_ato = False
         self.has_timers = False
-        self.has_lighs = False
+        self.has_lights = False
         self.has_camera = False
         self.has_macro = False
 
@@ -152,20 +152,20 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def update_capabilities(self):
         _LOGGER.debug("Fetching capabilities")
 
-        def get_cabability(n):
-            return n in self.capabilities.keys() and self.capabilities[n]
+        def get_capability(name):
+            return name in self.capabilities.keys() and self.capabilities[name]
 
         self.capabilities = await self.api.capabilities()
         if self.capabilities:
-            self.has_temperature = get_cabability("temperature")
-            self.has_equipment = get_cabability("equipment")
-            self.has_ph = get_cabability("ph") and not self.disable_ph
-            self.has_pumps = get_cabability("doser")
-            self.has_ato = get_cabability("ato")
-            self.has_timers = get_cabability("timers")
-            self.has_lighs = get_cabability("lighting")
-            self.has_camera = get_cabability("camera")
-            self.has_macro = get_cabability("macro")
+            self.has_temperature = get_capability("temperature")
+            self.has_equipment = get_capability("equipment")
+            self.has_ph = get_capability("ph") and not self.disable_ph
+            self.has_pumps = get_capability("doser")
+            self.has_ato = get_capability("ato")
+            self.has_timers = get_capability("timers")
+            self.has_lights = get_capability("lighting")
+            self.has_camera = get_capability("camera")
+            self.has_macro = get_capability("macro")
             _LOGGER.debug("Capabilities: ok")
 
     async def update_info(self):
@@ -259,7 +259,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
 
     async def update_lights(self):
-        if self.has_lighs:
+        if self.has_lights:
             _LOGGER.debug("Fetching lights")
             lights = await self.api.lights()
             if lights:
