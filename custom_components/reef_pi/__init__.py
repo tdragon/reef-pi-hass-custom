@@ -63,6 +63,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "undo_update_listener": undo_listener,
     }
 
+    async def _async_calibrate_ph_probe(call):
+        probe_id = call.data["probe_id"]
+        expected = call.data["expected"]
+        observed = call.data["observed"]
+        type_ = call.data.get("type")
+        await coordinator.calibrate_ph_probe(probe_id, expected, observed, type_)
+
+    hass.services.async_register(
+        DOMAIN,
+        "calibrate_ph_probe",
+        _async_calibrate_ph_probe,
+        vol.Schema(
+            {
+                vol.Required("probe_id"): vol.Coerce(int),
+                vol.Required("expected"): vol.Coerce(float),
+                vol.Required("observed"): vol.Coerce(float),
+                vol.Optional("type"): str,
+            }
+        ),
+    )
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -120,6 +141,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.has_lights = False
         self.has_camera = False
         self.has_macro = False
+        self.has_display = False
 
         self.info = {}
         self.capabilities = {}
@@ -133,6 +155,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.inlets = {}
         self.macros = {}
         self.timers = {}
+        self.display = {}
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
@@ -166,6 +189,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             self.has_lights = get_capability("lighting")
             self.has_camera = get_capability("camera")
             self.has_macro = get_capability("macro")
+            self.has_display = get_capability("display")
             _LOGGER.debug("Capabilities: ok")
 
     async def update_info(self):
@@ -284,6 +308,13 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
                 self.lights = all_light
 
+    async def update_display(self):
+        if self.has_display:
+            _LOGGER.debug("Fetching display state")
+            state = await self.api.display_state()
+            if state:
+                self.display = state
+
     async def update_inlets(self):
         if self.has_ato:
             _LOGGER.debug("Fetching inlets")
@@ -381,6 +412,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_atos()
             await self.update_inlets()
             await self.update_lights()
+            await self.update_display()
             await self.update_macros()
             await self.update_timers()
         except InvalidAuth as error:
@@ -409,6 +441,25 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def run_script(self, id):
         await self.api.run_macro(id)
+
+    async def reboot(self):
+        await self.api.reboot()
+
+    async def power_off(self):
+        await self.api.power_off()
+
+    async def display_switch(self, on: bool):
+        await self.api.display_switch(on)
+        self.display["on"] = on
+
+    async def display_brightness(self, value: int):
+        await self.api.display_brightness(value)
+        self.display["brightness"] = value
+
+    async def calibrate_ph_probe(
+        self, probe_id: int, expected: float, observed: float, type_: str | None = None
+    ):
+        await self.api.ph_probe_calibrate_point(probe_id, expected, observed, type_)
 
     async def timer_control(self, id, state):
         await self.api.timer_control(id, state)

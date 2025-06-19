@@ -43,6 +43,11 @@ Additionally, it creates one sensor for CPU temperature: `sensor.{reef_pi_name}`
 
 For each equipment configured in Reef Pi an outlet entity is created: `switch.{reef_pi name}_{equipment_name}`
 
+Additional entities include:
+- `switch.{reef_pi name}_display` to toggle the reef-pi display on or off.
+- `button.{reef_pi name}_reboot` and `button.{reef_pi name}_poweroff` for rebooting or shutting down the controller.
+- `reef_pi.calibrate_ph_probe` service to calibrate a pH probe.
+
 ## NOTE: How to "fix" intermittent pH readings
 On some installations of this addon, it can cause Reef Pi to intermittently drop the reading from both the Reef Pi graph/database and in Home Assistant.
 
