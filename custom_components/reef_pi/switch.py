@@ -28,6 +28,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     ]
     async_add_entities(timers)
 
+    display = []
+    if coordinator.has_display:
+        display.append(ReefPiDisplaySwitch(coordinator))
+    async_add_entities(display)
+
 
 class ReefPiTimers(CoordinatorEntity, SwitchEntity):
     def __init__(self, id, name, coordinator):
@@ -198,3 +203,42 @@ class ReefPiAtoSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ato[self._id]
+
+
+class ReefPiDisplaySwitch(CoordinatorEntity, SwitchEntity):
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self.api = coordinator
+
+    _attr_device_class = SwitchDeviceClass.SWITCH
+    _attr_has_entity_name = True
+    _attr_name = "Display"
+    _attr_icon = "mdi:television-classic"
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.unique_id}_display"
+
+    @property
+    def is_on(self):
+        return self.api.display.get("on", False)
+
+    @property
+    def available(self):
+        return bool(self.api.display)
+
+    @property
+    def device_info(self):
+        return self.api.device_info
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self.api.display_switch(True)
+        self.schedule_update_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self.api.display_switch(False)
+        self.schedule_update_ha_state()
+
+    @property
+    def extra_state_attributes(self):
+        return self.api.display

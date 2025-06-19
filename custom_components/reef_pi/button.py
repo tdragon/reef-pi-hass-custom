@@ -17,7 +17,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         ReefPiButton(id, base_name + macro["name"], coordinator)
         for id, macro in coordinator.macros.items()
     ]
-    async_add_entities(macros)
+    buttons = macros
+    buttons.append(ReefPiRebootButton(coordinator))
+    buttons.append(ReefPiPowerOffButton(coordinator))
+    async_add_entities(buttons)
 
 
 class ReefPiButton(CoordinatorEntity, ButtonEntity):
@@ -53,3 +56,45 @@ class ReefPiButton(CoordinatorEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Async press action."""
         await self.api.run_script(self._id)
+
+
+class ReefPiRebootButton(CoordinatorEntity, ButtonEntity):
+    _attr_has_entity_name = True
+    _attr_name = "Reboot"
+    _attr_icon = "mdi:restart"
+
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self.api = coordinator
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.unique_id}_reboot"
+
+    @property
+    def device_info(self):
+        return self.api.device_info
+
+    async def async_press(self) -> None:
+        await self.api.reboot()
+
+
+class ReefPiPowerOffButton(CoordinatorEntity, ButtonEntity):
+    _attr_has_entity_name = True
+    _attr_name = "Power Off"
+    _attr_icon = "mdi:power"
+
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self.api = coordinator
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.unique_id}_poweroff"
+
+    @property
+    def device_info(self):
+        return self.api.device_info
+
+    async def async_press(self) -> None:
+        await self.api.power_off()
