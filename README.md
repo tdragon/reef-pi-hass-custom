@@ -17,7 +17,7 @@ This custom integration provides a way to monitor sensors data and control equip
 
 This integration can be installed using HACS.
 To do it add custom *integration* repository using url: `https://github.com/tdragon/reef-pi-hass-custom/`.
-Then search for Reef Pi in in the *Integrations* section.
+Then search for Reef Pi in the *Integrations* section.
 
 ### Manual
 To install this integration manually you have to download the content of this repository to `config/custom_components/reef-pi-hass-custom` directory:
@@ -43,9 +43,14 @@ Additionally, it creates one sensor for CPU temperature: `sensor.{reef_pi_name}`
 
 For each equipment configured in Reef Pi an outlet entity is created: `switch.{reef_pi name}_{equipment_name}`
 
+Additional entities include:
+- `switch.{reef_pi name}_display` to toggle the reef-pi display on or off.
+- `button.{reef_pi name}_reboot` and `button.{reef_pi name}_poweroff` for rebooting or shutting down the controller.
+- `reef_pi.calibrate_ph_probe` service to calibrate a pH probe.
+
 ## NOTE: How to "fix" intermittent pH readings
 On some installations of this addon, it can cause Reef Pi to intermittently drop the reading from both the Reef Pi graph/database and in Home Assistant.
 
-To fix this, in Home Assistant go to Settings > Integrations > Reef-Pi integration and under "Integration entries" click on "Configure" and select "Disable pH sensir" and click on "Submit" and then click on the 3 vertical dots and select "Reload"
+To fix this, in Home Assistant go to Settings > Integrations > Reef-Pi integration and under "Integration entries" click on "Configure" and select "Disable pH sensor" and click on "Submit" and then click on the 3 vertical dots and select "Reload"
 
 To bring in pH sensor readings into Home Assistant you will need to enable the MQTT functionality from within the Reef Pi systems interface.

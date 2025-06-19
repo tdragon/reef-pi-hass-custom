@@ -190,6 +190,36 @@ class ReefApi:
     async def run_macro(self, id):
         return await self._post(f"macros/{id}/run", "")
 
+    async def reboot(self) -> bool:
+        return await self._post("admin/reboot", {})
+
+    async def power_off(self) -> bool:
+        return await self._post("admin/poweroff", {})
+
+    async def display_state(self) -> Dict[str, Any]:
+        return await self._get("display")
+
+    async def display_switch(self, on: bool) -> bool:
+        action = "on" if on else "off"
+        return await self._post(f"display/{action}", {})
+
+    async def display_brightness(self, value: int) -> bool:
+        payload = {"brightness": value}
+        return await self._post("display", payload)
+
+    async def ph_probe_calibrate(
+        self, id: int, measurements: list[dict[str, float]]
+    ) -> bool:
+        return await self._post(f"phprobes/{id}/calibrate", measurements)
+
+    async def ph_probe_calibrate_point(
+        self, id: int, expected: float, observed: float, type_: str | None = None
+    ) -> bool:
+        payload = {"expected": expected, "observed": observed}
+        if type_:
+            payload["type"] = type_
+        return await self._post(f"phprobes/{id}/calibratepoint", payload)
+
 
 class CannotConnect(Exception):
     """Error to indicate we cannot connect."""
