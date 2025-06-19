@@ -1,0 +1,35 @@
+calibrate_ph_probe:
+  name: Calibrate pH probe
+  description: Send a calibration point to a reef-pi pH probe.
+  fields:
+    probe_id:
+      description: ID of the probe to calibrate
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+    expected:
+      description: Expected pH value for the calibration point
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 14
+          step: 0.01
+          mode: box
+    observed:
+      description: Observed pH value for the calibration point
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 14
+          step: 0.01
+          mode: box
+    type:
+      description: Optional calibration type reported by reef-pi
+      required: false
+      selector:
+        text:
