@@ -8,7 +8,7 @@ lock_version = "4.5.0"
 content_hash = "sha256:dd59830b517a2b2856116d39952ad5b2e408ae9012f421383dcff17b61f28682"
 
 [[metadata.targets]]
-requires_python = ">=3.12"
+requires_python = "==3.13.*"
 
 [[package]]
 name = "acme"
