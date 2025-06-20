@@ -1,18 +1,24 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     branches: [master]
-    # Only run if commit message bumps version
     paths:
-      - 'pyproject.toml'
-      - 'custom_components/reef_pi/manifest.json'
+      - "pyproject.toml"
+      - "custom_components/reef_pi/manifest.json"
 
 jobs:
   release:
-    if: startsWith(github.event.head_commit.message, 'chore: bump version')
     runs-on: ubuntu-latest
     steps:
+      - name: Check commit message
+        run: |
+          if ! [[ "${{ github.event.head_commit.message }}" =~ ^chore:\ bump\ version ]]; then
+            echo "Not a version bump commit; skipping release."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -21,7 +27,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Tag commit
         id: tag
