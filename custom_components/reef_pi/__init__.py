@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import asyncio
 from datetime import datetime, timedelta
 
 import voluptuous as vol
@@ -27,6 +28,8 @@ from .const import (
     UPDATE_INTERVAL_MIN,
     USER,
     VERIFY_TLS,
+    PH_CALIBRATION_DELAY,
+    PH_CALIBRATION_MODES,
 )
 
 # TODO List the platforms that you want to support.
@@ -82,6 +85,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 vol.Optional("type"): str,
             }
         ),
+    )
+
+    async def _async_calibrate_ph_probe_two_point(call):
+        probe_id = call.data["probe_id"]
+        mode = call.data.get("mode", "freshwater").lower()
+        await coordinator.calibrate_ph_probe_two_point(probe_id, mode)
+
+    hass.services.async_register(
+        DOMAIN,
+        "calibrate_ph_probe_two_point",
+        _async_calibrate_ph_probe_two_point,
+        vol.Schema({vol.Required("probe_id"): vol.Coerce(int), vol.Optional("mode", default="freshwater"): str}),
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -274,10 +289,16 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 all_ph = {}
                 for probe in probes:
                     ph = await self.api.ph_readings(probe["id"])
+                    attributes = probe
+                    if probe["id"] in self.ph and self.ph[probe["id"]].get("attributes"):
+                        prev = self.ph[probe["id"]]["attributes"]
+                        for key in ("last_calibration", "calibration_status", "countdown_end"):
+                            if key in prev:
+                                attributes[key] = prev[key]
                     all_ph[probe["id"]] = {
                         "name": probe["name"],
                         "value": round(ph["value"], 4) if ph["value"] else None,
-                        "attributes": probe,
+                        "attributes": attributes,
                     }
                 self.ph = all_ph
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
@@ -460,6 +481,22 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self, probe_id: int, expected: float, observed: float, type_: str | None = None
     ):
         await self.api.ph_probe_calibrate_point(probe_id, expected, observed, type_)
+
+    async def calibrate_ph_probe_two_point(self, probe_id: int, mode: str):
+        low, high = PH_CALIBRATION_MODES.get(mode, PH_CALIBRATION_MODES["freshwater"])
+        for status, expected in [("low", low), ("high", high)]:
+            end = datetime.utcnow() + timedelta(seconds=PH_CALIBRATION_DELAY)
+            if probe_id not in self.ph:
+                self.ph[probe_id] = {"name": str(probe_id), "value": None, "attributes": {}}
+            self.ph[probe_id]["attributes"]["calibration_status"] = status
+            self.ph[probe_id]["attributes"]["countdown_end"] = end.isoformat()
+            await self.async_request_refresh()
+            await asyncio.sleep(PH_CALIBRATION_DELAY)
+            await self.api.ph_probe_calibrate_point(probe_id, expected, expected, status)
+        self.ph[probe_id]["attributes"]["calibration_status"] = "done"
+        self.ph[probe_id]["attributes"].pop("countdown_end", None)
+        self.ph[probe_id]["attributes"]["last_calibration"] = datetime.utcnow().strftime("%m/%y")
+        await self.async_request_refresh()
 
     async def timer_control(self, id, state):
         await self.api.timer_control(id, state)
