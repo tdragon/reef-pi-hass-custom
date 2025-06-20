@@ -47,3 +47,4 @@ jobs:
           tag_name: v${{ steps.tag.outputs.new_version }}
           prerelease: true
           files: output/reef_pi.zip
+          generate_release_notes: true
