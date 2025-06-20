@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install tools
+        run: |
+          pip install toml
+
+      - name: Read and bump version
+        id: bump
+        run: |
+          version=$(python -c "import toml; d=toml.load('pyproject.toml'); v=d['project']['version'].split('.'); v[-1]=str(int(v[-1])+1); print('.'.join(v))")
+          echo "new_version=$version" >> $GITHUB_OUTPUT
+          # Update pyproject.toml
+          python -c "import toml; f='pyproject.toml'; d=toml.load(f); d['project']['version']='$version'; open(f, 'w').write(toml.dumps(d))"
+          # Update manifest.json
+          jq --arg v "$version" '.version=$v' custom_components/reef_pi/manifest.json > custom_components/reef_pi/manifest.json.tmp && mv custom_components/reef_pi/manifest.json.tmp custom_components/reef_pi/manifest.json
+      - name: Commit and push
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add pyproject.toml custom_components/reef_pi/manifest.json
+          git commit -m "chore: bump version ${{ steps.bump.outputs.new_version }}"
+          git push origin main
+      - name: Tag commit
+        run: |
+          git tag v${{ steps.bump.outputs.new_version }}
+          git push origin v${{ steps.bump.outputs.new_version }}
+      - name: Prepare release
+        run: |
+          bash scripts/prepare_release.sh
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          prerelease: true
+          files: output/reef_pi.zip
