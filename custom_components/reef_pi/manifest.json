@@ -1,12 +1,12 @@
 {
   "domain": "reef_pi",
   "name": "Reef PI Integration",
-  "codeowners": ["@tdragon", "@alex255"],
+  "codeowners": ["@tdragon", "@alex255", "@danmrossi"],
   "config_flow": true,
   "dependencies": ["http"],
   "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/tdragon/reef-pi-hass-custom/issues",
   "requirements": ["httpx>=0.27.0"],
-  "version": "0.3.13"
+  "version": "0.3.14"
 }
