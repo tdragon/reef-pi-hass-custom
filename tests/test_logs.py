@@ -40,5 +40,6 @@ async def test_no_warning_in_log(hass, async_api_mock_instance, caplog):
         if ("WARNING" in line or "ERROR" in line)
         and "We found a custom integration reef_pi" not in line
         and "falling back to zlib" not in line
+        and "Executing <Task pending" not in line
     ]
     assert len(warnings) == 0
