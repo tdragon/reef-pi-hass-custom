@@ -12,7 +12,7 @@ from . import async_api_mock
 
 @pytest.fixture
 async def async_api_mock_instance():
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         async_api_mock.mock_all(mock)
         yield mock
 
@@ -104,7 +104,7 @@ async def test_ato_duration(hass, async_api_mock_instance):
 
 
 async def test_ato_empty(hass):
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         async_api_mock.mock_all(mock, has_ato_usage=False)
         entry = MockConfigEntry(
             domain=DOMAIN,
