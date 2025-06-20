@@ -96,7 +96,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN,
         "calibrate_ph_probe_two_point",
         _async_calibrate_ph_probe_two_point,
-        vol.Schema({vol.Required("probe_id"): vol.Coerce(int), vol.Optional("mode", default="freshwater"): str}),
+        vol.Schema(
+            {
+                vol.Required("probe_id"): vol.Coerce(int),
+                vol.Optional("mode", default="freshwater"): str,
+            }
+        ),
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -290,9 +295,15 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 for probe in probes:
                     ph = await self.api.ph_readings(probe["id"])
                     attributes = probe
-                    if probe["id"] in self.ph and self.ph[probe["id"]].get("attributes"):
+                    if probe["id"] in self.ph and self.ph[probe["id"]].get(
+                        "attributes"
+                    ):
                         prev = self.ph[probe["id"]]["attributes"]
-                        for key in ("last_calibration", "calibration_status", "countdown_end"):
+                        for key in (
+                            "last_calibration",
+                            "calibration_status",
+                            "countdown_end",
+                        ):
                             if key in prev:
                                 attributes[key] = prev[key]
                     all_ph[probe["id"]] = {
@@ -487,15 +498,23 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         for status, expected in [("low", low), ("high", high)]:
             end = datetime.utcnow() + timedelta(seconds=PH_CALIBRATION_DELAY)
             if probe_id not in self.ph:
-                self.ph[probe_id] = {"name": str(probe_id), "value": None, "attributes": {}}
+                self.ph[probe_id] = {
+                    "name": str(probe_id),
+                    "value": None,
+                    "attributes": {},
+                }
             self.ph[probe_id]["attributes"]["calibration_status"] = status
             self.ph[probe_id]["attributes"]["countdown_end"] = end.isoformat()
             await self.async_request_refresh()
             await asyncio.sleep(PH_CALIBRATION_DELAY)
-            await self.api.ph_probe_calibrate_point(probe_id, expected, expected, status)
+            await self.api.ph_probe_calibrate_point(
+                probe_id, expected, expected, status
+            )
         self.ph[probe_id]["attributes"]["calibration_status"] = "done"
         self.ph[probe_id]["attributes"].pop("countdown_end", None)
-        self.ph[probe_id]["attributes"]["last_calibration"] = datetime.utcnow().strftime("%m/%y")
+        self.ph[probe_id]["attributes"]["last_calibration"] = (
+            datetime.utcnow().strftime("%m/%y")
+        )
         await self.async_request_refresh()
 
     async def timer_control(self, id, state):

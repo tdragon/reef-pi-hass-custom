@@ -77,6 +77,8 @@ async def test_atos(reef_pi_instance):
 @pytest.mark.asyncio
 async def test_ph_calibration(reef_pi_instance):
     mock, reef = reef_pi_instance
-    mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(200, json={})
+    mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(
+        200, json={}
+    )
     result = await reef.ph_probe_calibrate_point(6, 7.0, 6.9, "mid")
     assert result
