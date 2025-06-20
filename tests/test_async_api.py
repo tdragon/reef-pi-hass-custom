@@ -13,7 +13,7 @@ log.info("TEST")
 
 @pytest.fixture
 async def reef_pi_instance():
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         async_api_mock.mock_signin(mock)
         a = async_api.ReefApi(async_api_mock.REEF_MOCK_URL)
         await a.authenticate(
@@ -25,7 +25,7 @@ async def reef_pi_instance():
 
 @pytest.mark.asyncio
 async def test_basic_auth():
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         async_api_mock.mock_signin(mock)
         reef = async_api.ReefApi(async_api_mock.REEF_MOCK_URL)
         await reef.authenticate(

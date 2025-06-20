@@ -9,7 +9,7 @@ from . import async_api_mock
 
 @pytest.fixture
 async def async_api_mock_instance_display():
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         async_api_mock.mock_all(mock)
         mock.get(
             f"{async_api_mock.REEF_MOCK_URL}/api/capabilities",

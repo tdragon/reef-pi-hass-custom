@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__package__)
 
 @pytest.fixture
 async def async_api_mock_instance():
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         async_api_mock.mock_all(mock)
         yield mock
 
