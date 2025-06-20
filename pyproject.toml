@@ -1,6 +1,6 @@
 [project]
 name = "reef-pi-hass-custom"
-version = "0.3.14"
+version = "0.3.10"
 description = "HomeAssistant Reef PI Integration"
 authors = [
     {name = "tdragon", email = "1210261+tdragon@users.noreply.github.com"},
@@ -31,4 +31,3 @@ venv = ".venv"
 
 [tool.pdm.scripts]
 post_install = "pre-commit install"
-
