@@ -34,3 +34,27 @@ calibrate_ph_probe:
       selector:
         text:
 
+calibrate_ph_probe_two_point:
+  name: Calibrate pH probe two points
+  description: >-
+    Perform a two point calibration on a reef-pi pH probe. The probe will be
+    calibrated using predefined low and high solutions depending on the chosen
+    mode. A countdown is displayed for each step.
+  fields:
+    probe_id:
+      description: ID of the probe to calibrate
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+    mode:
+      description: Calibration mode (freshwater or saltwater)
+      required: false
+      selector:
+        select:
+          options:
+            - "freshwater"
+            - "saltwater"
+
