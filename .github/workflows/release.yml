@@ -36,7 +36,7 @@ jobs:
           git config user.name "GitHub Actions"
           git add pyproject.toml custom_components/reef_pi/manifest.json
           git commit -m "chore: bump version ${{ steps.bump.outputs.new_version }}"
-          git push origin main
+          git push origin master
       - name: Tag commit
         run: |
           git tag v${{ steps.bump.outputs.new_version }}
