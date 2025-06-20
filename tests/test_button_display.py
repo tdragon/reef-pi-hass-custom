@@ -34,9 +34,9 @@ async def async_api_mock_instance_display():
                 "display": True,
             },
         )
-        mock.get(
-            f"{async_api_mock.REEF_MOCK_URL}/api/display"
-        ).respond(200, json={"on": False, "brightness": 50})
+        mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/display").respond(
+            200, json={"on": False, "brightness": 50}
+        )
         yield mock
 
 
