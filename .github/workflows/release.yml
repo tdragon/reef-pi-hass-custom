@@ -1,26 +1,12 @@
 name: Release
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - "pyproject.toml"
-      - "custom_components/reef_pi/manifest.json"
   workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Check commit message
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            if ! [[ "${{ github.event.head_commit.message }}" =~ ^chore:\ bump\ version ]]; then
-              echo "Not a version bump commit; skipping release."
-              exit 1
-            fi
-          fi
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
