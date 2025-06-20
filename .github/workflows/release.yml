@@ -4,7 +4,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  pytest:
+    uses: ./.github/workflows/pytest.yaml
+
+  hassfest:
+    uses: ./.github/workflows/hassfest.yaml
+
   release:
+    needs: [pytest, hassfest]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
