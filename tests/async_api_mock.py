@@ -66,6 +66,7 @@ def mock_ph6(mock, url=REEF_MOCK_URL):
             200,
             json=ph_readings,
         )
+    mock.get(f"{url}/api/phprobes/6/read").respond(200, json={"value": 6.66})
 
 
 def mock_info(mock, url=REEF_MOCK_URL):
