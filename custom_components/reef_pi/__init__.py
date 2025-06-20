@@ -511,7 +511,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         """Run a two point pH probe calibration with user prompts."""
         notify = self.hass.components.persistent_notification
         low, high = PH_CALIBRATION_MODES.get(mode, PH_CALIBRATION_MODES["freshwater"])
-
         steps = [
             ("low", low),
             ("high", high),
