@@ -37,17 +37,22 @@ async def test_ph_calibration_buttons(hass, async_api_mock_instance):
         f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint"
     ).respond(200, json={})
 
-    with patch("custom_components.reef_pi.__init__.PH_CALIBRATION_DELAY", 0), patch(
-        "asyncio.sleep",
-        return_value=asyncio.Future(),
-    ) as sleep_mock, patch(
-        "homeassistant.components.persistent_notification.async_create",
-        new_callable=AsyncMock,
-    ) as notify_mock, patch(
-        "custom_components.reef_pi.async_api.ReefApi.ph",
-        new_callable=AsyncMock,
-        side_effect=[{"value": -1}] + [{"value": 7.0}] * 10,
-    ) as ph_mock:
+    with (
+        patch("custom_components.reef_pi.__init__.PH_CALIBRATION_DELAY", 0),
+        patch(
+            "asyncio.sleep",
+            return_value=asyncio.Future(),
+        ) as sleep_mock,
+        patch(
+            "homeassistant.components.persistent_notification.async_create",
+            new_callable=AsyncMock,
+        ) as notify_mock,
+        patch(
+            "custom_components.reef_pi.async_api.ReefApi.ph",
+            new_callable=AsyncMock,
+            side_effect=[{"value": -1}] + [{"value": 7.0}] * 10,
+        ) as ph_mock,
+    ):
         sleep_mock.return_value.set_result(None)
         await hass.services.async_call(
             "button",
