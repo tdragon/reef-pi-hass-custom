@@ -1,6 +1,5 @@
 """Reef Pi api wrapper"""
 
-import json
 import logging
 from datetime import datetime
 from typing import Any, Dict
@@ -53,9 +52,9 @@ class ReefApi:
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
-        if not response.status_code == 200:
+        if response.status_code != 200:
             return {}
-        return json.loads(response.text)
+        return response.json()
 
     async def _post(self, api, payload) -> bool:
         if not self.is_authenticated():
@@ -66,7 +65,7 @@ class ReefApi:
                 url = f"{self.host}/api/{api}"
                 client.cookies = self.cookies
                 response = await client.post(url, json=payload, timeout=self.timeout)
-                return response.status_code == 200
+                return response.is_success
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
@@ -146,9 +145,9 @@ class ReefApi:
                 url = f"{self.host}/api/inlets/{id}/read"
                 client.cookies = self.cookies
                 response = await client.post(url, json={}, timeout=self.timeout)
-                if not response.status_code == 200:
+                if response.status_code != 200:
                     return {}
-                return json.loads(response.text)
+                return response.json()
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
