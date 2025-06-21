@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
+from homeassistant.components import persistent_notification
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -509,7 +510,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def calibrate_ph_probe_two_point(self, probe_id: int, mode: str):
         """Run a two point pH probe calibration with user prompts."""
-        notify = self.hass.components.persistent_notification
         low, high = PH_CALIBRATION_MODES.get(mode, PH_CALIBRATION_MODES["freshwater"])
         steps = [
             ("low", low),
@@ -523,7 +523,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     f"Place the probe in {label} solution and wait"
                     f" {PH_CALIBRATION_DELAY // 60} minutes."
                 )
-                await notify.async_create(
+                await persistent_notification.async_create(
+                    self.hass,
                     message,
                     title="Reef-Pi Calibration",
                     notification_id=f"reef_pi_calibration_{probe_id}",
@@ -550,7 +551,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 reading = await self.api.ph(probe_id)
                 value = reading.get("value")
                 if value is None or value < 0:
-                    await notify.async_create(
+                    await persistent_notification.async_create(
+                        self.hass,
                         "Invalid reading detected, restarting step.",
                         title="Reef-Pi Calibration",
                         notification_id=f"reef_pi_calibration_{probe_id}",
@@ -572,7 +574,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 "last_calibration": datetime.now(UTC).strftime("%m/%y"),
             }
         )
-        await notify.async_create(
+        await persistent_notification.async_create(
+            self.hass,
             "Two point calibration complete.",
             title="Reef-Pi Calibration",
             notification_id=f"reef_pi_calibration_{probe_id}",
