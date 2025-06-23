@@ -3,11 +3,11 @@ name = "reef-pi-hass-custom"
 version = "0.3.16"
 description = "HomeAssistant Reef PI Integration"
 dependencies = [ "httpx>=0.27.0",]
-requires-python = "==3.13.*"
+requires-python = ">=3.13.2"
 readme = "README.md"
 [[project.authors]]
 name = "tdragon"
-email = "1210261+tdragon@users.noreply.github.com"
+email = "tdragn@gmail.com"
 
 [project.license]
 text = "MIT"
