@@ -254,13 +254,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 all_ph = {}
                 for probe in probes:
                     attributes = probe
-                    if probe["id"] in self.ph and self.ph[probe["id"]].get(
-                        "attributes"
-                    ):
-                        prev = self.ph[probe["id"]]["attributes"]
-                        if "last_calibration" in prev:
-                            attributes["last_calibration"] = prev["last_calibration"]
-
                     ph = await self.api.ph_readings(probe["id"])
                     value = round(ph["value"], 4) if ph["value"] else None
 
