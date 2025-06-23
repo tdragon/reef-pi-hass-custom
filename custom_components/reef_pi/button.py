@@ -18,15 +18,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, macro in coordinator.macros.items()
     ]
 
-    ph_buttons: list[ReefPiPhCalibrationButton] = []
-    for probe_id, probe in coordinator.ph.items():
-        for mode in ("freshwater", "saltwater"):
-            name = f"Calibrate {probe['name']} {mode.title()}"
-            ph_buttons.append(
-                ReefPiPhCalibrationButton(probe_id, name, mode, coordinator)
-            )
-
-    buttons = macros + ph_buttons
+    buttons = macros
     buttons.append(ReefPiRebootButton(coordinator))
     buttons.append(ReefPiPowerOffButton(coordinator))
     async_add_entities(buttons)
@@ -109,34 +101,3 @@ class ReefPiPowerOffButton(CoordinatorEntity, ButtonEntity):
         await self.api.power_off()
 
 
-class ReefPiPhCalibrationButton(CoordinatorEntity, ButtonEntity):
-    """Button to start a two point pH probe calibration."""
-
-    def __init__(self, probe_id: int, name: str, mode: str, coordinator):
-        super().__init__(coordinator)
-        self._probe_id = probe_id
-        self._name = name
-        self._mode = mode
-        self.api = coordinator
-
-    _attr_has_entity_name = True
-    _attr_icon = "mdi:beaker"
-
-    @property
-    def device_info(self):
-        return self.api.device_info
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def unique_id(self):
-        return f"{self.coordinator.unique_id}_ph_{self._probe_id}_{self._mode}"
-
-    @property
-    def available(self):
-        return self._probe_id in self.api.ph.keys()
-
-    async def async_press(self) -> None:
-        await self.api.calibrate_ph_probe_two_point(self._probe_id, self._mode)
