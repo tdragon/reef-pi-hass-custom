@@ -76,14 +76,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> ReefPiConfigFlowHandler:
-        return ReefPiConfigFlowHandler(config_entry)
+        return ReefPiConfigFlowHandler()
 
 
 class ReefPiConfigFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(self, _user_input=None):
         """Manage the options."""
         return await self.async_step_user()
