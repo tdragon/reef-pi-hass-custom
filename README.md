@@ -46,9 +46,6 @@ For each equipment configured in Reef Pi an outlet entity is created: `switch.{r
 Additional entities include:
 - `switch.{reef_pi name}_display` to toggle the reef-pi display on or off.
 - `button.{reef_pi name}_reboot` and `button.{reef_pi name}_poweroff` for rebooting or shutting down the controller.
-- `button.{reef_pi name}_calibrate_ph_freshwater` and `button.{reef_pi name}_calibrate_ph_saltwater` to run two point pH probe calibration without using developer tools. Freshwater mode uses pH 4 and pH 7 solutions, while saltwater mode uses pH 7 and pH 10. Pressing either button shows notifications for each step with a countdown before saving each reading.
-- During calibration the pH sensor state shows the raw probe value and retries a step if the reading is negative.
-- `reef_pi.calibrate_ph_probe` service to calibrate a pH probe.
 
 ## NOTE: How to "fix" intermittent pH readings
 On some installations of this addon, it can cause Reef Pi to intermittently drop the reading from both the Reef Pi graph/database and in Home Assistant.
