@@ -1,13 +1,11 @@
 """Test Ph sensor for Reef_Pi integration."""
 
+import pytest
+import respx
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-
 
 from custom_components.reef_pi import DOMAIN
 
-
-import pytest
-import respx
 from . import async_api_mock
 
 
