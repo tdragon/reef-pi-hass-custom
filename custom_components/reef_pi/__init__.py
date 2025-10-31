@@ -499,14 +499,22 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 return False
 
-            success = await self.api.ph_probe_calibrate_point(
+            success, error = await self.api.ph_probe_calibrate_point(
                 probe_identifier, expected, observed, step
             )
 
             if not success:
+                message = (
+                    "The reef-pi API rejected the calibration data. Please try again."
+                )
+                if error:
+                    message = (
+                        "reef-pi rejected the calibration data: "
+                        f"{error.strip()}"
+                    )
                 persistent_notification.async_create(
                     self.hass,
-                    "The reef-pi API rejected the calibration data. Please try again.",
+                    message,
                     title=title,
                     notification_id=notification_id,
                 )

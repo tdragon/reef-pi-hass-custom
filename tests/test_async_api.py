@@ -77,8 +77,13 @@ async def test_atos(reef_pi_instance):
 @pytest.mark.asyncio
 async def test_ph_calibration(reef_pi_instance):
     mock, reef = reef_pi_instance
-    mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(
-        200, json={}
-    )
-    result = await reef.ph_probe_calibrate_point(6, 7.0, 6.9, "mid")
-    assert result
+    endpoint = f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint"
+    mock.post(endpoint).respond(200, json={})
+    success, message = await reef.ph_probe_calibrate_point(6, 7.0, 6.9, "mid")
+    assert success
+    assert message is None
+
+    mock.post(endpoint).respond(400, json={"error": "Probe must be disabled"})
+    success, message = await reef.ph_probe_calibrate_point(6, 7.0, 6.9, "mid")
+    assert not success
+    assert message == "Probe must be disabled"

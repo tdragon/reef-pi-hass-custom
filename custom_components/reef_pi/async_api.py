@@ -56,7 +56,7 @@ class ReefApi:
             return {}
         return response.json()
 
-    async def _post(self, api, payload) -> bool:
+    async def _post(self, api, payload, *, return_error: bool = False):
         if not self.is_authenticated():
             raise InvalidAuth
 
@@ -65,6 +65,24 @@ class ReefApi:
                 url = f"{self.host}/api/{api}"
                 client.cookies = self.cookies
                 response = await client.post(url, json=payload, timeout=self.timeout)
+                if return_error:
+                    if response.is_success:
+                        return True, None
+
+                    message: str | None = None
+                    content_type = response.headers.get("content-type", "")
+                    if "json" in content_type:
+                        try:
+                            data = response.json()
+                        except ValueError:
+                            data = {}
+                        message = data.get("error") or data.get("message")
+                    if not message:
+                        text = response.text.strip()
+                        message = text or None
+
+                    return False, message
+
                 return response.is_success
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
@@ -213,11 +231,13 @@ class ReefApi:
 
     async def ph_probe_calibrate_point(
         self, id: int, expected: float, observed: float, type_: str | None = None
-    ) -> bool:
+    ) -> tuple[bool, str | None]:
         payload = {"expected": expected, "observed": observed}
         if type_:
             payload["type"] = type_
-        return await self._post(f"phprobes/{id}/calibratepoint", payload)
+        return await self._post(
+            f"phprobes/{id}/calibratepoint", payload, return_error=True
+        )
 
 
 class CannotConnect(Exception):
