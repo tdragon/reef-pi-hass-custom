@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-import json
 import asyncio
-from datetime import datetime, timedelta, UTC
+import json
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import voluptuous as vol
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady, HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -18,12 +21,19 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .const import (
     _LOGGER,
+    CALIBRATION_MODE,
+    CALIBRATION_POINTS,
+    CALIBRATION_PROBE,
+    CALIBRATION_TYPE_FRESHWATER,
+    CALIBRATION_TYPE_SALTWATER,
+    CALIBRATION_WAIT_SECONDS,
     CONFIG_OPTIONS,
     DISABLE_PH,
     DOMAIN,
     HOST,
     MANUFACTURER,
     PASSWORD,
+    START_CALIBRATION,
     UPDATE_INTERVAL_CFG,
     UPDATE_INTERVAL_MIN,
     USER,
@@ -33,6 +43,26 @@ from .const import (
 # TODO List the platforms that you want to support.
 # For your initial PR, limit it to 1 platform.
 PLATFORMS = ["sensor", "switch", "light", "binary_sensor", "button"]
+
+SERVICE_CALIBRATE_PH = "calibrate_ph_probe"
+CONF_CONFIG_ENTRY_ID = "config_entry_id"
+CALIBRATION_NOTIFICATION_PREFIX = "reef_pi_calibration"
+CALIBRATION_PROGRESS_STEP = 15
+
+CALIBRATION_MODE_LABELS = {
+    CALIBRATION_TYPE_FRESHWATER: "Freshwater",
+    CALIBRATION_TYPE_SALTWATER: "Saltwater",
+}
+
+CALIBRATION_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_CONFIG_ENTRY_ID): cv.string,
+        vol.Required(CALIBRATION_PROBE): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        vol.Required(CALIBRATION_MODE): vol.In(
+            [CALIBRATION_TYPE_FRESHWATER, CALIBRATION_TYPE_SALTWATER]
+        ),
+    }
+)
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
 
@@ -63,6 +93,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "coordinator": coordinator,
         "undo_update_listener": undo_listener,
     }
+
+    async def _async_handle_calibration(service_call):
+        probe_id = service_call.data[CALIBRATION_PROBE]
+        mode = service_call.data[CALIBRATION_MODE]
+        entry_id = service_call.data.get(CONF_CONFIG_ENTRY_ID)
+
+        async def _match_coordinator() -> ReefPiDataUpdateCoordinator:
+            candidates: list[ReefPiDataUpdateCoordinator] = []
+            if entry_id:
+                if entry_id not in hass.data[DOMAIN]:
+                    raise HomeAssistantError(
+                        f"No reef-pi configuration entry found for '{entry_id}'"
+                    )
+                candidates.append(hass.data[DOMAIN][entry_id]["coordinator"])
+            else:
+                candidates = [
+                    data["coordinator"] for data in hass.data[DOMAIN].values()
+                ]
+
+            if not candidates:
+                raise HomeAssistantError("No reef-pi coordinators are available")
+
+            for candidate in candidates:
+                try:
+                    await candidate.async_refresh_ph_catalog()
+                except CannotConnect as err:
+                    raise HomeAssistantError("Unable to contact reef-pi API") from err
+                if probe_id in candidate.ph_catalog:
+                    return candidate
+
+            if len(candidates) == 1:
+                return candidates[0]
+
+            raise HomeAssistantError(
+                f"Unable to find probe {probe_id} on the selected reef-pi host"
+            )
+
+        target = await _match_coordinator()
+        target.hass.async_create_task(target.async_calibrate_ph_probe(probe_id, mode))
+
+    if not hass.services.has_service(DOMAIN, SERVICE_CALIBRATE_PH):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_CALIBRATE_PH,
+            _async_handle_calibration,
+            schema=CALIBRATION_SCHEMA,
+        )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -114,6 +191,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.has_temperature = False
         self.has_equipment = False
+        self.has_ph_capability = False
         self.has_ph = False
         self.has_pumps = False
         self.has_ato = False
@@ -128,6 +206,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.tcs = {}
         self.equipment = {}
         self.ph = {}
+        self.ph_catalog: dict[int, dict[str, Any]] = {}
         self.pumps = {}
         self.ato = {}
         self.ato_states = {}
@@ -160,9 +239,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.capabilities = await self.api.capabilities()
         if self.capabilities:
+            ph_capable = get_capability("ph")
             self.has_temperature = get_capability("temperature")
             self.has_equipment = get_capability("equipment")
-            self.has_ph = get_capability("ph") and not self.disable_ph
+            self.has_ph_capability = ph_capable
+            self.has_ph = ph_capable and not self.disable_ph
             self.has_pumps = get_capability("doser")
             self.has_ato = get_capability("ato")
             self.has_timers = get_capability("timers")
@@ -246,24 +327,52 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 self.macros = all_macros
 
     async def update_ph(self):
-        if self.has_ph:
-            _LOGGER.debug("Fetching phprobes")
-            probes = await self.api.phprobes()
-            if probes:
-                _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
-                all_ph = {}
-                for probe in probes:
-                    attributes = probe
-                    ph = await self.api.ph_readings(probe["id"])
-                    value = round(ph["value"], 4) if ph["value"] else None
+        if not self.has_ph_capability:
+            return
 
-                    all_ph[probe["id"]] = {
-                        "name": probe["name"],
-                        "value": value,
-                        "attributes": attributes,
-                    }
-                self.ph = all_ph
-                _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
+        _LOGGER.debug("Fetching phprobes")
+        probes = await self.api.phprobes()
+
+        if not probes:
+            self.ph = {}
+            self.ph_catalog = {}
+            return
+
+        _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
+        catalog: dict[int, dict[str, Any]] = {}
+        for probe in probes:
+            probe_id_raw = probe.get("id")
+            try:
+                probe_id = int(probe_id_raw)
+            except (TypeError, ValueError):
+                _LOGGER.debug("Unable to coerce probe id %s to int", probe_id_raw)
+                try:
+                    probe_id = int(str(probe_id_raw))
+                except (TypeError, ValueError):
+                    continue
+
+            catalog[probe_id] = {"name": probe.get("name", str(probe_id)), "attributes": probe}
+
+        self.ph_catalog = catalog
+
+        if not self.has_ph:
+            self.ph = {}
+            return
+
+        all_ph: dict[str | int, dict[str, Any]] = {}
+        for probe_id, catalog_entry in catalog.items():
+            attributes = catalog_entry["attributes"]
+            ph = await self.api.ph_readings(attributes["id"])
+            value = round(ph["value"], 4) if ph["value"] else None
+
+            all_ph[attributes["id"]] = {
+                "name": catalog_entry["name"],
+                "value": value,
+                "attributes": attributes,
+            }
+
+        self.ph = all_ph
+        _LOGGER.debug("Got %d pH probes: %s", len(all_ph), all_ph)
 
     async def update_lights(self):
         if self.has_lights:
@@ -289,7 +398,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                                 "attributes": light["channels"][channel],
                             }
 
-                self.lights = all_light
+        self.lights = all_light
 
     async def update_display(self):
         if self.has_display:
@@ -297,6 +406,149 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             state = await self.api.display_state()
             if state:
                 self.display = state
+
+    async def async_refresh_ph_catalog(self) -> None:
+        """Ensure the pH probe catalog is populated."""
+
+        if not self.has_ph_capability:
+            return
+
+        if self.ph_catalog:
+            return
+
+        await self.update_ph()
+
+    async def async_get_ph_probe_options(self) -> dict[str, str]:
+        """Return probe options for UI selection."""
+
+        await self.update_ph()
+        if not self.ph_catalog:
+            return {}
+
+        return {
+            str(probe_id): catalog["name"]
+            for probe_id, catalog in sorted(
+                self.ph_catalog.items(), key=lambda item: item[1]["name"].lower()
+            )
+        }
+
+    async def async_calibrate_ph_probe(self, probe_id: int, mode: str) -> None:
+        """Run a two point calibration for the provided probe."""
+
+        if mode not in CALIBRATION_POINTS:
+            persistent_notification.async_create(
+                self.hass,
+                f"Unknown calibration mode: {mode}",
+                title="reef-pi calibration",
+            )
+            return
+
+        await self.update_ph()
+        probe = self.ph_catalog.get(probe_id)
+
+        if not probe:
+            persistent_notification.async_create(
+                self.hass,
+                f"pH probe {probe_id} could not be found. Refresh the integration options and try again.",
+                title="reef-pi calibration",
+            )
+            return
+
+        probe_name = probe["name"]
+        mode_name = CALIBRATION_MODE_LABELS.get(mode, mode.title())
+        probe_identifier = probe["attributes"]["id"]
+
+        async def _run_step(step: str, expected: float) -> bool:
+            solution = "low" if step == "low" else "high"
+            notification_id = (
+                f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_{step}"
+            )
+            title = f"{probe_name}: {mode_name} {solution} point"
+            instruction = (
+                f"Place the probe in the {solution} calibration solution (pH {expected:.2f})."
+            )
+
+            remaining = CALIBRATION_WAIT_SECONDS
+            while remaining > 0:
+                message = (
+                    f"{instruction}\n\n"
+                    f"Time remaining before the reading is saved: {self._format_seconds(remaining)}."
+                )
+                persistent_notification.async_create(
+                    self.hass, message, title=title, notification_id=notification_id
+                )
+                interval = min(CALIBRATION_PROGRESS_STEP, remaining)
+                await asyncio.sleep(interval)
+                remaining -= interval
+
+            persistent_notification.async_create(
+                self.hass,
+                "Capturing the probe reading...",
+                title=title,
+                notification_id=notification_id,
+            )
+
+            reading = await self.api.ph(probe_identifier)
+            observed = reading.get("value") if reading else None
+            if observed is None:
+                persistent_notification.async_create(
+                    self.hass,
+                    "The probe did not report a reading. Calibration was aborted.",
+                    title=title,
+                    notification_id=notification_id,
+                )
+                return False
+
+            success = await self.api.ph_probe_calibrate_point(
+                probe_identifier, expected, observed, step
+            )
+
+            if not success:
+                persistent_notification.async_create(
+                    self.hass,
+                    "The reef-pi API rejected the calibration data. Please try again.",
+                    title=title,
+                    notification_id=notification_id,
+                )
+                return False
+
+            persistent_notification.async_create(
+                self.hass,
+                f"Calibration for the {solution} point saved (expected {expected:.2f}, observed {observed:.2f}).",
+                title=title,
+                notification_id=notification_id,
+            )
+            return True
+
+        low_expected = CALIBRATION_POINTS[mode]["low"]
+        high_expected = CALIBRATION_POINTS[mode]["high"]
+
+        if not await _run_step("low", low_expected):
+            return
+
+        persistent_notification.async_create(
+            self.hass,
+            "Rinse the probe and place it in the high calibration solution to continue.",
+            title=f"{probe_name}: Prepare high point",
+            notification_id=f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_instructions",
+        )
+
+        if not await _run_step("high", high_expected):
+            return
+
+        persistent_notification.async_create(
+            self.hass,
+            f"Two point calibration for {probe_name} is complete.",
+            title=f"{probe_name}: Calibration finished",
+            notification_id=f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_complete",
+        )
+
+        await self.async_request_refresh()
+
+    @staticmethod
+    def _format_seconds(seconds: int) -> str:
+        minutes, secs = divmod(max(seconds, 0), 60)
+        return f"{minutes:02}:{secs:02}"
 
     async def update_inlets(self):
         if self.has_ato:

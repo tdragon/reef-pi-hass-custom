@@ -19,5 +19,21 @@
             }
         }
     },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "update_interval": "Frissítési időköz",
+                    "disable_ph": "pH szenzor letiltása",
+                    "calibration_probe": "pH szonda",
+                    "calibration_mode": "Kalibráció típusa",
+                    "start_calibration": "Kalibráció indítása"
+                }
+            }
+        },
+        "error": {
+            "calibration_probe_required": "Válassz pH szondát a kalibráció indítása előtt."
+        }
+    },
     "title": "Reef-PI integráció"
 }

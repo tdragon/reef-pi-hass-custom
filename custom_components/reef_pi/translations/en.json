@@ -29,11 +29,16 @@
                     "username": "Username",
                     "verify": "Verify TLS certificate",
                     "update_interval": "Update interval",
-                    "disable_ph": "Disable pH sensor"
+                    "disable_ph": "Disable pH sensor",
+                    "calibration_probe": "pH probe",
+                    "calibration_mode": "Calibration type",
+                    "start_calibration": "Start guided calibration"
                 }
             }
+        },
+        "error": {
+            "calibration_probe_required": "Choose a pH probe before starting the calibration."
         }
-
     },
     "title": "Reef-PI integration"
 }

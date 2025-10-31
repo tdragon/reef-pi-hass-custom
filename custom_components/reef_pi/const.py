@@ -17,6 +17,18 @@ DISABLE_PH = "disable_ph"
 UPDATE_INTERVAL_MIN = timedelta(minutes=1)
 TIMEOUT_API_SEC = 1
 
+CALIBRATION_MODE = "calibration_mode"
+CALIBRATION_PROBE = "calibration_probe"
+START_CALIBRATION = "start_calibration"
+CALIBRATION_TYPE_FRESHWATER = "freshwater"
+CALIBRATION_TYPE_SALTWATER = "saltwater"
+CALIBRATION_WAIT_SECONDS = 5 * 60
+
+CALIBRATION_POINTS = {
+    CALIBRATION_TYPE_FRESHWATER: {"low": 4.0, "high": 7.0},
+    CALIBRATION_TYPE_SALTWATER: {"low": 7.0, "high": 10.0},
+}
+
 
 CONFIG_OPTIONS = {
     vol.Required(HOST, default="https://127.0.0.1"): str,  # type: ignore
