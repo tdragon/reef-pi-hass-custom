@@ -1,0 +1,28 @@
+calibrate_ph_probe:
+  name: Calibrate pH probe
+  description: Run a guided two-point calibration for a reef-pi pH probe.
+  fields:
+    config_entry_id:
+      name: reef-pi controller
+      description: Select the reef-pi configuration entry that owns the probe. Leave blank to auto-detect.
+      required: false
+      selector:
+        config_entry:
+          integration: reef_pi
+    calibration_probe:
+      name: pH probe ID
+      description: Identifier of the pH probe to calibrate. The integration options dialog lists the available probes.
+      required: true
+      selector:
+        text:
+    calibration_mode:
+      name: Calibration type
+      description: Choose the calibration range to use.
+      required: true
+      selector:
+        select:
+          options:
+            - label: Freshwater (pH 4.00 - 7.00)
+              value: freshwater
+            - label: Saltwater (pH 7.00 - 10.00)
+              value: saltwater
