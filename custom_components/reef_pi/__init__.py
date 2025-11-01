@@ -465,15 +465,17 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         probe_name = probe["name"]
         mode_name = CALIBRATION_MODE_LABELS.get(mode, mode.title())
         probe_identifier = probe["attributes"]["id"]
+        probe_label = f"{probe_name} (ID {probe_identifier})"
 
         async def _run_step(step: str, expected: float) -> bool:
             solution = "low" if step == "low" else "high"
             notification_id = (
                 f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_{step}"
             )
-            title = f"{probe_name}: {mode_name} {solution} point"
+            title = f"{probe_label}: {mode_name} {solution} point"
             instruction = (
-                f"Place the probe in the {solution} calibration solution (pH {expected:.2f})."
+                f"Place {probe_label} in the {solution} calibration solution "
+                f"(pH {expected:.2f})."
             )
 
             remaining = CALIBRATION_WAIT_SECONDS
@@ -535,7 +537,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     heading="Calibration failed",
                     body=(
                         "The probe did not report a reading when the calibration point was "
-                        f"captured.{extra}"
+                        f"captured for {probe_label}.{extra}"
                     ),
                 )
                 return False
@@ -551,8 +553,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     heading="Calibration failed",
                     body=(
                         "Home Assistant could not reach reef-pi while saving the "
-                        "calibration point. Check the controller connection and try "
-                        "again."
+                        f"calibration point for {probe_label}. Check the controller "
+                        "connection and try again."
                     ),
                 )
                 return False
@@ -563,8 +565,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     heading="Calibration failed",
                     body=(
                         "reef-pi rejected Home Assistant's credentials while saving "
-                        "this calibration point. Re-authenticate the integration and "
-                        "retry."
+                        f"this calibration point for {probe_label}. Re-authenticate "
+                        "the integration and retry."
                     ),
                 )
                 return False
@@ -580,13 +582,14 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     heading="Calibration failed",
                     body=(
                         "An unexpected error occurred while saving the calibration "
-                        "point. Check the Home Assistant logs for details."
+                        f"point for {probe_label}. Check the Home Assistant logs for "
+                        "details."
                     ),
                 )
                 return False
 
             if not success:
-                detail = f" Observed reading was {observed:.2f} pH."
+                detail = f" Observed reading for {probe_label} was {observed:.2f} pH."
                 message = (
                     "The reef-pi API rejected the calibration data. Please try again."
                     f"{detail}"
@@ -610,7 +613,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 title=title,
                 heading="Calibration saved",
                 body=(
-                    f"Calibration for the {solution} point saved "
+                    f"Calibration for the {solution} point saved for {probe_label} "
                     f"(expected {expected:.2f}, observed {observed:.2f} pH)."
                 ),
             )
@@ -626,9 +629,12 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             notification_id=(
                 f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_instructions"
             ),
-            title=f"{probe_name}: Prepare high point",
+            title=f"{probe_label}: Prepare high point",
             heading="Are you sure?",
-            body="Rinse the probe and place it in the high calibration solution to continue.",
+            body=(
+                f"Rinse {probe_label} and place it in the high calibration solution to "
+                "continue."
+            ),
         )
 
         if not await _run_step("high", high_expected):
@@ -638,9 +644,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             notification_id=(
                 f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_complete"
             ),
-            title=f"{probe_name}: Calibration finished",
+            title=f"{probe_label}: Calibration finished",
             heading="Calibration finished",
-            body=f"Two point calibration for {probe_name} is complete.",
+            body=f"Two point calibration for {probe_label} is complete.",
         )
 
         await self.async_request_refresh()
