@@ -478,16 +478,22 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
 
             remaining = CALIBRATION_WAIT_SECONDS
             latest_observed: float | None = None
+            last_error: str | None = None
             while remaining > 0:
-                reading = await self.api.ph(probe_identifier)
-                value = reading.get("value") if reading else None
-                if isinstance(value, (int, float)):
-                    latest_observed = float(value)
+                value, error = await self._async_read_probe_value(probe_identifier)
+                if value is not None:
+                    latest_observed = value
+                    last_error = None
+                elif error:
+                    last_error = error
                 lines = [instruction, ""]
                 if latest_observed is not None:
                     lines.append(f"Current probe reading: {latest_observed:.2f} pH.")
                 else:
-                    lines.append("Current probe reading is unavailable.")
+                    if last_error:
+                        lines.append(last_error)
+                    else:
+                        lines.append("Current probe reading is unavailable.")
                 lines.extend(
                     [
                         "",
@@ -513,15 +519,16 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 body="Capturing the probe reading...",
             )
 
-            reading = await self.api.ph(probe_identifier)
-            observed_value = reading.get("value") if reading else None
-            if not isinstance(observed_value, (int, float)):
+            observed, error = await self._async_read_probe_value(probe_identifier)
+            if observed is None:
                 extra = ""
                 if latest_observed is not None:
                     extra = (
                         " Last recorded reading before capture was "
                         f"{latest_observed:.2f} pH."
                     )
+                if error:
+                    extra = f" {error}"
                 self._async_create_popup_notification(
                     notification_id=notification_id,
                     title=title,
@@ -533,11 +540,50 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 return False
 
-            observed = float(observed_value)
-
-            success, error = await self.api.ph_probe_calibrate_point(
-                probe_identifier, expected, observed, step
-            )
+            try:
+                success, rejection = await self.api.ph_probe_calibrate_point(
+                    probe_identifier, expected, observed, step
+                )
+            except CannotConnect:
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "Home Assistant could not reach reef-pi while saving the "
+                        "calibration point. Check the controller connection and try "
+                        "again."
+                    ),
+                )
+                return False
+            except InvalidAuth:
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "reef-pi rejected Home Assistant's credentials while saving "
+                        "this calibration point. Re-authenticate the integration and "
+                        "retry."
+                    ),
+                )
+                return False
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception(
+                    "Unexpected error while saving %s calibration point for probe %s",
+                    step,
+                    probe_identifier,
+                )
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "An unexpected error occurred while saving the calibration "
+                        "point. Check the Home Assistant logs for details."
+                    ),
+                )
+                return False
 
             if not success:
                 detail = f" Observed reading was {observed:.2f} pH."
@@ -545,10 +591,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     "The reef-pi API rejected the calibration data. Please try again."
                     f"{detail}"
                 )
-                if error:
+                if rejection:
                     message = (
                         "reef-pi rejected the calibration data: "
-                        f"{error.strip()}"
+                        f"{rejection.strip()}"
                         f"{detail}"
                     )
                 self._async_create_popup_notification(
@@ -598,6 +644,29 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         )
 
         await self.async_request_refresh()
+
+    async def _async_read_probe_value(
+        self, probe_identifier: int
+    ) -> tuple[float | None, str | None]:
+        """Fetch the latest reading for a probe, handling API errors."""
+
+        try:
+            reading = await self.api.ph(probe_identifier)
+        except CannotConnect:
+            return None, "Unable to contact reef-pi to read the probe."
+        except InvalidAuth:
+            return None, "reef-pi authentication failed when reading the probe."
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception(
+                "Unexpected error while reading probe %s", probe_identifier
+            )
+            return None, "An unexpected error occurred while reading the probe."
+
+        value = reading.get("value") if reading else None
+        if isinstance(value, (int, float)):
+            return float(value), None
+
+        return None, None
 
     @staticmethod
     def _format_seconds(seconds: int) -> str:
