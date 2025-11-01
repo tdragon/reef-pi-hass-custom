@@ -477,11 +477,25 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             )
 
             remaining = CALIBRATION_WAIT_SECONDS
+            latest_observed: float | None = None
             while remaining > 0:
-                message = (
-                    f"{instruction}\n\n"
-                    f"Time remaining before the reading is saved: {self._format_seconds(remaining)}."
+                reading = await self.api.ph(probe_identifier)
+                value = reading.get("value") if reading else None
+                if isinstance(value, (int, float)):
+                    latest_observed = float(value)
+                lines = [instruction, ""]
+                if latest_observed is not None:
+                    lines.append(f"Current probe reading: {latest_observed:.2f} pH.")
+                else:
+                    lines.append("Current probe reading is unavailable.")
+                lines.extend(
+                    [
+                        "",
+                        "Time remaining before the reading is saved: "
+                        f"{self._format_seconds(remaining)}.",
+                    ]
                 )
+                message = "\n".join(lines)
                 self._async_create_popup_notification(
                     notification_id=notification_id,
                     title=title,
@@ -500,28 +514,42 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             )
 
             reading = await self.api.ph(probe_identifier)
-            observed = reading.get("value") if reading else None
-            if observed is None:
+            observed_value = reading.get("value") if reading else None
+            if not isinstance(observed_value, (int, float)):
+                extra = ""
+                if latest_observed is not None:
+                    extra = (
+                        " Last recorded reading before capture was "
+                        f"{latest_observed:.2f} pH."
+                    )
                 self._async_create_popup_notification(
                     notification_id=notification_id,
                     title=title,
                     heading="Calibration failed",
-                    body="The probe did not report a reading. Calibration was aborted.",
+                    body=(
+                        "The probe did not report a reading when the calibration point was "
+                        f"captured.{extra}"
+                    ),
                 )
                 return False
+
+            observed = float(observed_value)
 
             success, error = await self.api.ph_probe_calibrate_point(
                 probe_identifier, expected, observed, step
             )
 
             if not success:
+                detail = f" Observed reading was {observed:.2f} pH."
                 message = (
                     "The reef-pi API rejected the calibration data. Please try again."
+                    f"{detail}"
                 )
                 if error:
                     message = (
                         "reef-pi rejected the calibration data: "
                         f"{error.strip()}"
+                        f"{detail}"
                     )
                 self._async_create_popup_notification(
                     notification_id=notification_id,
@@ -537,7 +565,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 heading="Calibration saved",
                 body=(
                     f"Calibration for the {solution} point saved "
-                    f"(expected {expected:.2f}, observed {observed:.2f})."
+                    f"(expected {expected:.2f}, observed {observed:.2f} pH)."
                 ),
             )
             return True
