@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -436,10 +437,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         """Run a two point calibration for the provided probe."""
 
         if mode not in CALIBRATION_POINTS:
-            persistent_notification.async_create(
-                self.hass,
-                f"Unknown calibration mode: {mode}",
+            self._async_create_popup_notification(
+                notification_id=f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_invalid_mode",
                 title="reef-pi calibration",
+                heading="Are you sure?",
+                body=f"Unknown calibration mode: {mode}",
             )
             return
 
@@ -447,76 +449,173 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         probe = self.ph_catalog.get(probe_id)
 
         if not probe:
-            persistent_notification.async_create(
-                self.hass,
-                f"pH probe {probe_id} could not be found. Refresh the integration options and try again.",
+            self._async_create_popup_notification(
+                notification_id=(
+                    f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_id}_missing"
+                ),
                 title="reef-pi calibration",
+                heading="Are you sure?",
+                body=(
+                    f"pH probe {probe_id} could not be found. "
+                    "Refresh the integration options and try again."
+                ),
             )
             return
 
         probe_name = probe["name"]
         mode_name = CALIBRATION_MODE_LABELS.get(mode, mode.title())
         probe_identifier = probe["attributes"]["id"]
+        probe_label = f"{probe_name} (ID {probe_identifier})"
 
         async def _run_step(step: str, expected: float) -> bool:
             solution = "low" if step == "low" else "high"
             notification_id = (
                 f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_{step}"
             )
-            title = f"{probe_name}: {mode_name} {solution} point"
+            title = f"{probe_label}: {mode_name} {solution} point"
             instruction = (
-                f"Place the probe in the {solution} calibration solution (pH {expected:.2f})."
+                f"Place {probe_label} in the {solution} calibration solution "
+                f"(pH {expected:.2f})."
             )
 
             remaining = CALIBRATION_WAIT_SECONDS
+            latest_observed: float | None = None
+            last_error: str | None = None
             while remaining > 0:
-                message = (
-                    f"{instruction}\n\n"
-                    f"Time remaining before the reading is saved: {self._format_seconds(remaining)}."
+                value, error = await self._async_read_probe_value(probe_identifier)
+                if value is not None:
+                    latest_observed = value
+                    last_error = None
+                elif error:
+                    last_error = error
+                lines = [instruction, ""]
+                if latest_observed is not None:
+                    lines.append(f"Current probe reading: {latest_observed:.2f} pH.")
+                else:
+                    if last_error:
+                        lines.append(last_error)
+                    else:
+                        lines.append("Current probe reading is unavailable.")
+                lines.extend(
+                    [
+                        "",
+                        "Time remaining before the reading is saved: "
+                        f"{self._format_seconds(remaining)}.",
+                    ]
                 )
-                persistent_notification.async_create(
-                    self.hass, message, title=title, notification_id=notification_id
+                message = "\n".join(lines)
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Are you sure?",
+                    body=message,
                 )
                 interval = min(CALIBRATION_PROGRESS_STEP, remaining)
                 await asyncio.sleep(interval)
                 remaining -= interval
 
-            persistent_notification.async_create(
-                self.hass,
-                "Capturing the probe reading...",
-                title=title,
+            self._async_create_popup_notification(
                 notification_id=notification_id,
+                title=title,
+                heading="Calibration update",
+                body="Capturing the probe reading...",
             )
 
-            reading = await self.api.ph(probe_identifier)
-            observed = reading.get("value") if reading else None
+            observed, error = await self._async_read_probe_value(probe_identifier)
             if observed is None:
-                persistent_notification.async_create(
-                    self.hass,
-                    "The probe did not report a reading. Calibration was aborted.",
-                    title=title,
+                extra = ""
+                if latest_observed is not None:
+                    extra = (
+                        " Last recorded reading before capture was "
+                        f"{latest_observed:.2f} pH."
+                    )
+                if error:
+                    extra = f" {error}"
+                self._async_create_popup_notification(
                     notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "The probe did not report a reading when the calibration point was "
+                        f"captured for {probe_label}.{extra}"
+                    ),
                 )
                 return False
 
-            success = await self.api.ph_probe_calibrate_point(
-                probe_identifier, expected, observed, step
-            )
+            try:
+                success, rejection = await self.api.ph_probe_calibrate_point(
+                    probe_identifier, expected, observed, step
+                )
+            except CannotConnect:
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "Home Assistant could not reach reef-pi while saving the "
+                        f"calibration point for {probe_label}. Check the controller "
+                        "connection and try again."
+                    ),
+                )
+                return False
+            except InvalidAuth:
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "reef-pi rejected Home Assistant's credentials while saving "
+                        f"this calibration point for {probe_label}. Re-authenticate "
+                        "the integration and retry."
+                    ),
+                )
+                return False
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception(
+                    "Unexpected error while saving %s calibration point for probe %s",
+                    step,
+                    probe_identifier,
+                )
+                self._async_create_popup_notification(
+                    notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=(
+                        "An unexpected error occurred while saving the calibration "
+                        f"point for {probe_label}. Check the Home Assistant logs for "
+                        "details."
+                    ),
+                )
+                return False
 
             if not success:
-                persistent_notification.async_create(
-                    self.hass,
-                    "The reef-pi API rejected the calibration data. Please try again.",
-                    title=title,
+                detail = f" Observed reading for {probe_label} was {observed:.2f} pH."
+                message = (
+                    "The reef-pi API rejected the calibration data. Please try again."
+                    f"{detail}"
+                )
+                if rejection:
+                    message = (
+                        "reef-pi rejected the calibration data: "
+                        f"{rejection.strip()}"
+                        f"{detail}"
+                    )
+                self._async_create_popup_notification(
                     notification_id=notification_id,
+                    title=title,
+                    heading="Calibration failed",
+                    body=message,
                 )
                 return False
 
-            persistent_notification.async_create(
-                self.hass,
-                f"Calibration for the {solution} point saved (expected {expected:.2f}, observed {observed:.2f}).",
-                title=title,
+            self._async_create_popup_notification(
                 notification_id=notification_id,
+                title=title,
+                heading="Calibration saved",
+                body=(
+                    f"Calibration for the {solution} point saved for {probe_label} "
+                    f"(expected {expected:.2f}, observed {observed:.2f} pH)."
+                ),
             )
             return True
 
@@ -526,29 +625,88 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         if not await _run_step("low", low_expected):
             return
 
-        persistent_notification.async_create(
-            self.hass,
-            "Rinse the probe and place it in the high calibration solution to continue.",
-            title=f"{probe_name}: Prepare high point",
-            notification_id=f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_instructions",
+        self._async_create_popup_notification(
+            notification_id=(
+                f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_instructions"
+            ),
+            title=f"{probe_label}: Prepare high point",
+            heading="Are you sure?",
+            body=(
+                f"Rinse {probe_label} and place it in the high calibration solution to "
+                "continue."
+            ),
         )
 
         if not await _run_step("high", high_expected):
             return
 
-        persistent_notification.async_create(
-            self.hass,
-            f"Two point calibration for {probe_name} is complete.",
-            title=f"{probe_name}: Calibration finished",
-            notification_id=f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_complete",
+        self._async_create_popup_notification(
+            notification_id=(
+                f"{CALIBRATION_NOTIFICATION_PREFIX}_{self.unique_id}_{probe_identifier}_complete"
+            ),
+            title=f"{probe_label}: Calibration finished",
+            heading="Calibration finished",
+            body=f"Two point calibration for {probe_label} is complete.",
         )
 
         await self.async_request_refresh()
+
+    async def _async_read_probe_value(
+        self, probe_identifier: int
+    ) -> tuple[float | None, str | None]:
+        """Fetch the latest reading for a probe, handling API errors."""
+
+        try:
+            reading = await self.api.ph(probe_identifier)
+        except CannotConnect:
+            return None, "Unable to contact reef-pi to read the probe."
+        except InvalidAuth:
+            return None, "reef-pi authentication failed when reading the probe."
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception(
+                "Unexpected error while reading probe %s", probe_identifier
+            )
+            return None, "An unexpected error occurred while reading the probe."
+
+        value = reading.get("value") if reading else None
+        if isinstance(value, (int, float)):
+            return float(value), None
+
+        return None, None
 
     @staticmethod
     def _format_seconds(seconds: int) -> str:
         minutes, secs = divmod(max(seconds, 0), 60)
         return f"{minutes:02}:{secs:02}"
+
+    @staticmethod
+    def _format_popup_message(heading: str, body: str) -> str:
+        """Render calibration guidance inside a Lovelace-style popup card."""
+
+        escaped_heading = html.escape(heading)
+        escaped_body = html.escape(body).replace("\n", "<br>")
+        return (
+            f"<ha-card header=\"{escaped_heading}\">"
+            f"<div class=\"card-content\">{escaped_body}</div>"
+            "</ha-card>"
+        )
+
+    def _async_create_popup_notification(
+        self,
+        *,
+        notification_id: str,
+        title: str,
+        heading: str,
+        body: str,
+    ) -> None:
+        """Create a persistent notification styled like a Lovelace popup."""
+
+        persistent_notification.async_create(
+            self.hass,
+            self._format_popup_message(heading, body),
+            title=title,
+            notification_id=notification_id,
+        )
 
     async def update_inlets(self):
         if self.has_ato:
