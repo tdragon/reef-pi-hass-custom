@@ -71,6 +71,24 @@ The integration provides services to calibrate pH probes directly from Home Assi
 
 ### Calibration Workflows
 
+#### Monitoring pH Readings During Calibration
+
+To see if readings have stabilized:
+
+1. **View your pH sensor** in Home Assistant (e.g., `sensor.reef_pi_ph`)
+   - Go to **Developer Tools → States** and find your pH sensor
+   - Or add the pH sensor to a dashboard for easier monitoring
+   - Or use the **History** view to see the reading trend
+
+2. **Watch for stabilization** - The reading should:
+   - Stop changing for 30-60 seconds
+   - Remain within ±0.05 pH of a stable value
+   - Typically takes 1-3 minutes in calibration buffer
+
+3. **Note:** Even with the probe disabled, it will still show readings - this is expected and necessary for calibration.
+
+**Tip:** Before running calibration, check that the current reading is close to the expected buffer value (within ~0.5 pH). If it's way off, your probe may need cleaning or the buffer may be contaminated.
+
 #### Saltwater/Reef Systems
 
 Use pH 7.0 (midpoint) and pH 10.0 (highpoint) calibration buffers:
