@@ -95,38 +95,66 @@ Use pH 4.0 (midpoint) and pH 7.0 (highpoint) calibration buffers:
 
 ### Example Service Calls
 
-Saltwater calibration:
+**Complete Saltwater Calibration:**
 ```yaml
-# First point (pH 7.0)
+# Step 1: Disable the probe
+service: reef_pi.set_ph_probe_enabled
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  enabled: false
+
+# Step 2: Place probe in pH 7.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_midpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 7.0
 
-# Second point (pH 10.0)
+# Step 3: Rinse, place in pH 10.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_highpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 10.0
+
+# Step 4: Re-enable the probe
+service: reef_pi.set_ph_probe_enabled
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  enabled: true
 ```
 
-Freshwater calibration:
+**Complete Freshwater Calibration:**
 ```yaml
-# First point (pH 4.0)
+# Step 1: Disable the probe
+service: reef_pi.set_ph_probe_enabled
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  enabled: false
+
+# Step 2: Place probe in pH 4.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_midpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 4.0
 
-# Second point (pH 7.0)
+# Step 3: Rinse, place in pH 7.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_highpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 7.0
+
+# Step 4: Re-enable the probe
+service: reef_pi.set_ph_probe_enabled
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  enabled: true
 ```
 
 ## NOTE: How to "fix" intermittent pH readings
