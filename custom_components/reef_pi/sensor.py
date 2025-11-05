@@ -52,14 +52,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     platform = entity_platform.async_get_current_platform()
 
     platform.async_register_entity_service(
-        "calibrate_ph_lowpoint",
-        {
-            vol.Required("expected"): cv.positive_float,
-        },
-        "async_calibrate_lowpoint",
-    )
-
-    platform.async_register_entity_service(
         "calibrate_ph_midpoint",
         {
             vol.Required("expected"): cv.positive_float,
@@ -213,16 +205,6 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ph[self._id]["attributes"]
-
-    async def async_calibrate_lowpoint(self, expected: float):
-        """Service handler for calibrating pH probe lowpoint"""
-        _LOGGER.info("Calibrating pH probe %s lowpoint with expected value %f", self._id, expected)
-        try:
-            await self.api.ph_probe_calibrate_lowpoint(self._id, expected)
-            await self.coordinator.async_request_refresh()
-        except Exception as e:
-            _LOGGER.error("Failed to calibrate pH probe %s: %s", self._id, str(e))
-            raise
 
     async def async_calibrate_midpoint(self, expected: float):
         """Service handler for calibrating pH probe midpoint"""

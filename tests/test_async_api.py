@@ -75,7 +75,8 @@ async def test_atos(reef_pi_instance):
 
 
 @pytest.mark.asyncio
-async def test_ph_calibration_midpoint(reef_pi_instance):
+async def test_ph_calibration_midpoint_saltwater(reef_pi_instance):
+    """Test pH calibration midpoint with saltwater buffer (pH 7.0)"""
     mock, reef = reef_pi_instance
     mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(
         200, json={}
@@ -85,22 +86,35 @@ async def test_ph_calibration_midpoint(reef_pi_instance):
 
 
 @pytest.mark.asyncio
-async def test_ph_calibration_lowpoint(reef_pi_instance):
+async def test_ph_calibration_midpoint_freshwater(reef_pi_instance):
+    """Test pH calibration midpoint with freshwater buffer (pH 4.0)"""
     mock, reef = reef_pi_instance
     mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(
         200, json={}
     )
-    result = await reef.ph_probe_calibrate_point(6, 4.0, 4.1, "low")
+    result = await reef.ph_probe_calibrate_point(6, 4.0, 4.1, "mid")
     assert result
 
 
 @pytest.mark.asyncio
-async def test_ph_calibration_highpoint(reef_pi_instance):
+async def test_ph_calibration_highpoint_saltwater(reef_pi_instance):
+    """Test pH calibration highpoint with saltwater buffer (pH 10.0)"""
     mock, reef = reef_pi_instance
     mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(
         200, json={}
     )
     result = await reef.ph_probe_calibrate_point(6, 10.0, 9.8, "high")
+    assert result
+
+
+@pytest.mark.asyncio
+async def test_ph_calibration_highpoint_freshwater(reef_pi_instance):
+    """Test pH calibration highpoint with freshwater buffer (pH 7.0)"""
+    mock, reef = reef_pi_instance
+    mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/calibratepoint").respond(
+        200, json={}
+    )
+    result = await reef.ph_probe_calibrate_point(6, 7.0, 6.9, "high")
     assert result
 
 

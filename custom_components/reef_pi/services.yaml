@@ -1,26 +1,6 @@
-calibrate_ph_lowpoint:
-  name: Calibrate pH lowpoint
-  description: Calibrate the pH probe's lowpoint (typically pH 4.0 for freshwater). The probe should be in calibration buffer solution before running this service.
-  target:
-    entity:
-      domain: sensor
-      integration: reef_pi
-  fields:
-    expected:
-      name: Expected pH
-      description: The expected pH value of the calibration buffer (typically 4.0 for freshwater)
-      required: true
-      example: 4.0
-      selector:
-        number:
-          min: 0.0
-          max: 14.0
-          step: 0.01
-          mode: box
-
 calibrate_ph_midpoint:
   name: Calibrate pH midpoint
-  description: Calibrate the pH probe's midpoint (typically pH 7.0). The probe should be in calibration buffer solution before running this service.
+  description: Calibrate the pH probe's midpoint. Use pH 7.0 for saltwater or pH 4.0 for freshwater. The probe should be in calibration buffer solution before running this service.
   target:
     entity:
       domain: sensor
@@ -28,7 +8,7 @@ calibrate_ph_midpoint:
   fields:
     expected:
       name: Expected pH
-      description: The expected pH value of the calibration buffer (typically 7.0)
+      description: The expected pH value of the calibration buffer (7.0 for saltwater, 4.0 for freshwater)
       required: true
       example: 7.0
       selector:
@@ -40,7 +20,7 @@ calibrate_ph_midpoint:
 
 calibrate_ph_highpoint:
   name: Calibrate pH highpoint
-  description: Calibrate the pH probe's highpoint (typically pH 10.0 for saltwater). The probe should be in calibration buffer solution before running this service.
+  description: Calibrate the pH probe's highpoint. Use pH 10.0 for saltwater or pH 7.0 for freshwater. The probe should be in calibration buffer solution before running this service.
   target:
     entity:
       domain: sensor
