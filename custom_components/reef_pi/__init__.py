@@ -446,6 +446,16 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         await self.api.timer_control(id, state)
         self.timers[id]["state"] = state
 
+    async def ph_probe_calibrate_lowpoint(self, id: str, expected: float):
+        """Calibrate pH probe lowpoint (typically pH 4.0 for freshwater)"""
+        probe_id = int(id)
+        # Get current reading
+        reading = await self.api.ph(probe_id)
+        if reading["value"] is None:
+            raise ValueError("Cannot read pH value for calibration")
+        observed = reading["value"]
+        return await self.api.ph_probe_calibrate_point(probe_id, expected, observed, "low")
+
     async def ph_probe_calibrate_midpoint(self, id: str, expected: float):
         """Calibrate pH probe midpoint (typically pH 7.0)"""
         probe_id = int(id)
@@ -457,7 +467,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         return await self.api.ph_probe_calibrate_point(probe_id, expected, observed, "mid")
 
     async def ph_probe_calibrate_highpoint(self, id: str, expected: float):
-        """Calibrate pH probe highpoint (typically pH 10.0)"""
+        """Calibrate pH probe highpoint (typically pH 10.0 for saltwater)"""
         probe_id = int(id)
         # Get current reading
         reading = await self.api.ph(probe_id)

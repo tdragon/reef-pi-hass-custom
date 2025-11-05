@@ -50,26 +50,35 @@ Additional entities include:
 
 ## pH Probe Calibration
 
-The integration provides services to calibrate pH probes directly from Home Assistant:
+The integration provides services to calibrate pH probes directly from Home Assistant for both saltwater and freshwater systems:
 
 ### Services Available
 
-1. **`reef_pi.calibrate_ph_midpoint`** - Calibrate the pH probe's midpoint (typically pH 7.0)
+1. **`reef_pi.calibrate_ph_lowpoint`** - Calibrate the pH probe's lowpoint (typically pH 4.0 for freshwater)
+   - Target: pH sensor entity
+   - Parameters:
+     - `expected`: The expected pH value of the calibration buffer (e.g., 4.0)
+
+2. **`reef_pi.calibrate_ph_midpoint`** - Calibrate the pH probe's midpoint (typically pH 7.0)
    - Target: pH sensor entity
    - Parameters:
      - `expected`: The expected pH value of the calibration buffer (e.g., 7.0)
 
-2. **`reef_pi.calibrate_ph_highpoint`** - Calibrate the pH probe's highpoint (typically pH 10.0)
+3. **`reef_pi.calibrate_ph_highpoint`** - Calibrate the pH probe's highpoint (typically pH 10.0 for saltwater)
    - Target: pH sensor entity
    - Parameters:
      - `expected`: The expected pH value of the calibration buffer (e.g., 10.0)
 
-3. **`reef_pi.set_ph_probe_enabled`** - Enable or disable a pH probe
+4. **`reef_pi.set_ph_probe_enabled`** - Enable or disable a pH probe
    - Target: pH sensor entity
    - Parameters:
      - `enabled`: `true` to enable, `false` to disable
 
-### Calibration Workflow
+### Calibration Workflows
+
+#### Saltwater/Reef Systems (Two-Point Calibration)
+
+Use pH 7.0 and pH 10.0 calibration buffers:
 
 1. **Disable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: false`
 2. **Place probe in pH 7.0 buffer** and wait for reading to stabilize
@@ -78,13 +87,35 @@ The integration provides services to calibrate pH probes directly from Home Assi
 5. **Run highpoint calibration** using `reef_pi.calibrate_ph_highpoint` with `expected: 10.0`
 6. **Enable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: true`
 
-Example service call:
+#### Freshwater Systems (Two-Point Calibration)
+
+Use pH 4.0 and pH 7.0 calibration buffers:
+
+1. **Disable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: false`
+2. **Place probe in pH 4.0 buffer** and wait for reading to stabilize
+3. **Run lowpoint calibration** using `reef_pi.calibrate_ph_lowpoint` with `expected: 4.0`
+4. **Rinse probe** and place in pH 7.0 buffer, wait for reading to stabilize
+5. **Run midpoint calibration** using `reef_pi.calibrate_ph_midpoint` with `expected: 7.0`
+6. **Enable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: true`
+
+### Example Service Calls
+
+Saltwater midpoint calibration:
 ```yaml
 service: reef_pi.calibrate_ph_midpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 7.0
+```
+
+Freshwater lowpoint calibration:
+```yaml
+service: reef_pi.calibrate_ph_lowpoint
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  expected: 4.0
 ```
 
 ## NOTE: How to "fix" intermittent pH readings
