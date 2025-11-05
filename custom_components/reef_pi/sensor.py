@@ -2,6 +2,8 @@
 
 from datetime import datetime
 
+import voluptuous as vol
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -10,7 +12,9 @@ from homeassistant.components.sensor import (
 from homeassistant.const import DEGREE, UnitOfTemperature
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers import entity_platform
 from homeassistant.util import slugify
+import homeassistant.helpers.config_validation as cv
 
 from .const import _LOGGER, DOMAIN
 
@@ -43,6 +47,33 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities([ReefPiBasicInfo(coordinator)])
     async_add_entities(pumps)
     async_add_entities(atos)
+
+    # Register pH calibration services
+    platform = entity_platform.async_get_current_platform()
+
+    platform.async_register_entity_service(
+        "calibrate_ph_midpoint",
+        {
+            vol.Required("expected"): cv.positive_float,
+        },
+        "async_calibrate_midpoint",
+    )
+
+    platform.async_register_entity_service(
+        "calibrate_ph_highpoint",
+        {
+            vol.Required("expected"): cv.positive_float,
+        },
+        "async_calibrate_highpoint",
+    )
+
+    platform.async_register_entity_service(
+        "set_ph_probe_enabled",
+        {
+            vol.Required("enabled"): cv.boolean,
+        },
+        "async_set_enabled",
+    )
 
 
 class ReefPiBasicInfo(CoordinatorEntity, SensorEntity):
@@ -174,6 +205,36 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ph[self._id]["attributes"]
+
+    async def async_calibrate_midpoint(self, expected: float):
+        """Service handler for calibrating pH probe midpoint"""
+        _LOGGER.info("Calibrating pH probe %s midpoint with expected value %f", self._id, expected)
+        try:
+            await self.api.ph_probe_calibrate_midpoint(self._id, expected)
+            await self.coordinator.async_request_refresh()
+        except Exception as e:
+            _LOGGER.error("Failed to calibrate pH probe %s: %s", self._id, str(e))
+            raise
+
+    async def async_calibrate_highpoint(self, expected: float):
+        """Service handler for calibrating pH probe highpoint"""
+        _LOGGER.info("Calibrating pH probe %s highpoint with expected value %f", self._id, expected)
+        try:
+            await self.api.ph_probe_calibrate_highpoint(self._id, expected)
+            await self.coordinator.async_request_refresh()
+        except Exception as e:
+            _LOGGER.error("Failed to calibrate pH probe %s: %s", self._id, str(e))
+            raise
+
+    async def async_set_enabled(self, enabled: bool):
+        """Service handler for enabling/disabling pH probe"""
+        _LOGGER.info("Setting pH probe %s enabled to %s", self._id, enabled)
+        try:
+            await self.api.ph_probe_enable(self._id, enabled)
+            await self.coordinator.async_request_refresh()
+        except Exception as e:
+            _LOGGER.error("Failed to set pH probe %s enabled state: %s", self._id, str(e))
+            raise
 
 
 class ReefPiPump(CoordinatorEntity, SensorEntity):

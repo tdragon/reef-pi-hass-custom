@@ -1,0 +1,55 @@
+calibrate_ph_midpoint:
+  name: Calibrate pH midpoint
+  description: Calibrate the pH probe's midpoint (typically pH 7.0). The probe should be in calibration buffer solution before running this service.
+  target:
+    entity:
+      domain: sensor
+      integration: reef_pi
+  fields:
+    expected:
+      name: Expected pH
+      description: The expected pH value of the calibration buffer (typically 7.0)
+      required: true
+      example: 7.0
+      selector:
+        number:
+          min: 0.0
+          max: 14.0
+          step: 0.01
+          mode: box
+
+calibrate_ph_highpoint:
+  name: Calibrate pH highpoint
+  description: Calibrate the pH probe's highpoint (typically pH 10.0). The probe should be in calibration buffer solution before running this service.
+  target:
+    entity:
+      domain: sensor
+      integration: reef_pi
+  fields:
+    expected:
+      name: Expected pH
+      description: The expected pH value of the calibration buffer (typically 10.0)
+      required: true
+      example: 10.0
+      selector:
+        number:
+          min: 0.0
+          max: 14.0
+          step: 0.01
+          mode: box
+
+set_ph_probe_enabled:
+  name: Enable/Disable pH probe
+  description: Enable or disable a pH probe. The probe must be disabled during calibration.
+  target:
+    entity:
+      domain: sensor
+      integration: reef_pi
+  fields:
+    enabled:
+      name: Enabled
+      description: Enable or disable the pH probe
+      required: true
+      example: false
+      selector:
+        boolean:

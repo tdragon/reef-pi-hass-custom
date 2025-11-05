@@ -8,12 +8,14 @@ from datetime import datetime, timedelta, UTC
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.core_config import Config
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+import homeassistant.helpers.config_validation as cv
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .const import (
@@ -443,3 +445,31 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def timer_control(self, id, state):
         await self.api.timer_control(id, state)
         self.timers[id]["state"] = state
+
+    async def ph_probe_calibrate_midpoint(self, id: str, expected: float):
+        """Calibrate pH probe midpoint (typically pH 7.0)"""
+        probe_id = int(id)
+        # Get current reading
+        reading = await self.api.ph(probe_id)
+        if reading["value"] is None:
+            raise ValueError("Cannot read pH value for calibration")
+        observed = reading["value"]
+        return await self.api.ph_probe_calibrate_point(probe_id, expected, observed, "mid")
+
+    async def ph_probe_calibrate_highpoint(self, id: str, expected: float):
+        """Calibrate pH probe highpoint (typically pH 10.0)"""
+        probe_id = int(id)
+        # Get current reading
+        reading = await self.api.ph(probe_id)
+        if reading["value"] is None:
+            raise ValueError("Cannot read pH value for calibration")
+        observed = reading["value"]
+        return await self.api.ph_probe_calibrate_point(probe_id, expected, observed, "high")
+
+    async def ph_probe_enable(self, id: str, enable: bool):
+        """Enable or disable a pH probe"""
+        probe_id = int(id)
+        result = await self.api.ph_probe_update(probe_id, enable)
+        if result and probe_id in self.ph:
+            self.ph[probe_id]["attributes"]["enable"] = enable
+        return result

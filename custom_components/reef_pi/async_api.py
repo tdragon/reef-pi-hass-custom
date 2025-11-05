@@ -219,6 +219,12 @@ class ReefApi:
             payload["type"] = type_
         return await self._post(f"phprobes/{id}/calibratepoint", payload)
 
+    async def ph_probe_update(self, id: int, enable: bool) -> bool:
+        """Enable or disable a pH probe"""
+        payload = await self._get(f"phprobes/{id}")
+        payload["enable"] = enable
+        return await self._post(f"phprobes/{id}", payload)
+
 
 class CannotConnect(Exception):
     """Error to indicate we cannot connect."""

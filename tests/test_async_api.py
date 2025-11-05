@@ -82,3 +82,23 @@ async def test_ph_calibration(reef_pi_instance):
     )
     result = await reef.ph_probe_calibrate_point(6, 7.0, 6.9, "mid")
     assert result
+
+
+@pytest.mark.asyncio
+async def test_ph_probe_enable_disable(reef_pi_instance):
+    mock, reef = reef_pi_instance
+    # Mock getting probe data
+    mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6").respond(
+        200,
+        json={
+            "id": "6",
+            "name": "pH",
+            "enable": True,
+            "period": 60,
+            "analog_input": "1",
+        },
+    )
+    # Mock updating probe
+    mock.post(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6").respond(200, json={})
+    result = await reef.ph_probe_update(6, False)
+    assert result

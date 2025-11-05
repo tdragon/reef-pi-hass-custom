@@ -48,6 +48,45 @@ Additional entities include:
 - `switch.{reef_pi name}_display` to toggle the reef-pi display on or off.
 - `button.{reef_pi name}_reboot` and `button.{reef_pi name}_poweroff` for rebooting or shutting down the controller.
 
+## pH Probe Calibration
+
+The integration provides services to calibrate pH probes directly from Home Assistant:
+
+### Services Available
+
+1. **`reef_pi.calibrate_ph_midpoint`** - Calibrate the pH probe's midpoint (typically pH 7.0)
+   - Target: pH sensor entity
+   - Parameters:
+     - `expected`: The expected pH value of the calibration buffer (e.g., 7.0)
+
+2. **`reef_pi.calibrate_ph_highpoint`** - Calibrate the pH probe's highpoint (typically pH 10.0)
+   - Target: pH sensor entity
+   - Parameters:
+     - `expected`: The expected pH value of the calibration buffer (e.g., 10.0)
+
+3. **`reef_pi.set_ph_probe_enabled`** - Enable or disable a pH probe
+   - Target: pH sensor entity
+   - Parameters:
+     - `enabled`: `true` to enable, `false` to disable
+
+### Calibration Workflow
+
+1. **Disable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: false`
+2. **Place probe in pH 7.0 buffer** and wait for reading to stabilize
+3. **Run midpoint calibration** using `reef_pi.calibrate_ph_midpoint` with `expected: 7.0`
+4. **Rinse probe** and place in pH 10.0 buffer, wait for reading to stabilize
+5. **Run highpoint calibration** using `reef_pi.calibrate_ph_highpoint` with `expected: 10.0`
+6. **Enable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: true`
+
+Example service call:
+```yaml
+service: reef_pi.calibrate_ph_midpoint
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  expected: 7.0
+```
+
 ## NOTE: How to "fix" intermittent pH readings
 On some installations of this addon, it can cause Reef Pi to intermittently drop the reading from both the Reef Pi graph/database and in Home Assistant.
 
