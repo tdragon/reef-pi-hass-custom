@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import json
-import asyncio
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +15,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
+from .mqtt_handler import ReefPiMQTTHandler
 from .const import (
     _LOGGER,
     CONFIG_OPTIONS,
@@ -23,6 +23,7 @@ from .const import (
     DOMAIN,
     HOST,
     MANUFACTURER,
+    MQTT_ENABLED,
     PASSWORD,
     UPDATE_INTERVAL_CFG,
     UPDATE_INTERVAL_MIN,
@@ -56,6 +57,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
+
+    await coordinator.async_setup_mqtt()
 
     undo_listener = entry.add_update_listener(update_listener)
 
@@ -137,9 +140,28 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.timers = {}
         self.display = {}
 
+        self.tcs_name_to_id = {}
+        self.equipment_name_to_id = {}
+        self.ph_name_to_id = {}
+        self.inlet_name_to_id = {}
+        self.light_name_to_id = {}
+
+        self.mqtt_prefix = config_entry.data.get("mqtt_prefix", "reef-pi")
+        self.mqtt_enabled = config_entry.options.get(MQTT_ENABLED) or False
+        self.mqtt_handler = None
+
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
+
+    async def async_setup_mqtt(self):
+        """Setup MQTT subscriptions."""
+        if not self.mqtt_enabled:
+            _LOGGER.debug("MQTT is disabled, skipping subscription")
+            return
+
+        self.mqtt_handler = ReefPiMQTTHandler(self.hass, self)
+        await self.mqtt_handler.async_subscribe()
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -199,6 +221,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         ],
                         "attributes": sensor,
                     }
+                    self.tcs_name_to_id[sensor["name"]] = sensor["id"]
                 self.tcs = all_tcs
 
     async def update_equipment(self):
@@ -214,6 +237,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": device["on"],
                         "attributes": device,
                     }
+                    self.equipment_name_to_id[device["name"]] = device["id"]
                 self.equipment = all_equipment
 
     async def update_timers(self):
@@ -262,6 +286,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "value": value,
                         "attributes": attributes,
                     }
+                    self.ph_name_to_id[probe["name"]] = probe["id"]
                 self.ph = all_ph
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
 
@@ -280,14 +305,16 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                             channel_name = light["channels"][channel]["name"]
 
                             state = light["channels"][channel]["value"] > 0
+                            combined_name = f"{light_name}-{channel_name}"
                             all_light[id] = {
-                                "name": f"{light_name}-{channel_name}",
+                                "name": combined_name,
                                 "channel_id": channel,
                                 "light_id": light_id,
                                 "value": light["channels"][channel]["value"],
                                 "state": state,
                                 "attributes": light["channels"][channel],
                             }
+                            self.light_name_to_id[combined_name] = id
 
                 self.lights = all_light
 
@@ -318,6 +345,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": inlet_value,
                         "attributes": inlet,
                     }
+                    self.inlet_name_to_id[inlet["name"]] = inlet["id"]
                 self.inlets = all_inlet
 
     async def update_pumps(self):
@@ -438,7 +466,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def display_brightness(self, value: int):
         await self.api.display_brightness(value)
         self.display["brightness"] = value
-
 
     async def timer_control(self, id, state):
         await self.api.timer_control(id, state)

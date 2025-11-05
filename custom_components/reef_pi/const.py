@@ -14,6 +14,8 @@ PASSWORD = "password"
 VERIFY_TLS = "verify"
 UPDATE_INTERVAL_CFG = "update_interval"
 DISABLE_PH = "disable_ph"
+MQTT_ENABLED = "mqtt_enabled"
+MQTT_PREFIX = "mqtt_prefix"
 UPDATE_INTERVAL_MIN = timedelta(minutes=1)
 TIMEOUT_API_SEC = 1
 

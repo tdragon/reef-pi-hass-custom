@@ -14,6 +14,7 @@ from .const import (
     CONFIG_OPTIONS,
     DISABLE_PH,
     DOMAIN,
+    MQTT_ENABLED,
     UPDATE_INTERVAL_CFG,
 )
 
@@ -32,8 +33,17 @@ async def validate_input(_hass: HomeAssistant, data: dict[str, Any]) -> dict[str
     await hub.authenticate(data["username"], data["password"])
     info = await hub.info()
 
+    telemetry = await hub.telemetry_config()
+    mqtt_config = telemetry.get("mqtt", {})
+    mqtt_prefix = mqtt_config.get("prefix", "reef-pi")
+    mqtt_available = mqtt_config.get("enable", False)
+
     # Return info that you want to store in the config entry.
-    return {"title": info["name"]}
+    return {
+        "title": info["name"],
+        "mqtt_prefix": mqtt_prefix,
+        "mqtt_available": mqtt_available,
+    }
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -65,6 +75,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
         else:
+            user_input["mqtt_prefix"] = info["mqtt_prefix"]
+            user_input["mqtt_available"] = info["mqtt_available"]
             return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(
@@ -93,18 +105,31 @@ class ReefPiConfigFlowHandler(config_entries.OptionsFlow):
         if update_interval is None:
             update_interval = self.config_entry.data.get(UPDATE_INTERVAL_CFG)
 
+        mqtt_available = self.config_entry.data.get("mqtt_available", False)
+        mqtt_enabled_default = self.config_entry.options.get(MQTT_ENABLED)
+        if mqtt_enabled_default is None:
+            mqtt_enabled_default = mqtt_available
+
+        schema_dict = {
+            vol.Optional(
+                UPDATE_INTERVAL_CFG,
+                default=update_interval,  # type: ignore
+            ): int,
+            vol.Optional(
+                DISABLE_PH,
+                default=self.config_entry.options.get(DISABLE_PH),  # type: ignore
+            ): bool,
+        }
+
+        if mqtt_available:
+            schema_dict[
+                vol.Optional(
+                    MQTT_ENABLED,
+                    default=mqtt_enabled_default,  # type: ignore
+                )
+            ] = bool
+
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        UPDATE_INTERVAL_CFG,
-                        default=update_interval,  # type: ignore
-                    ): int,
-                    vol.Optional(
-                        DISABLE_PH,
-                        default=self.config_entry.options.get(DISABLE_PH),  # type: ignore
-                    ): bool,
-                }
-            ),
+            data_schema=vol.Schema(schema_dict),
         )
