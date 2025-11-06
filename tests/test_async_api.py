@@ -63,6 +63,19 @@ async def test_ph(reef_pi_instance):
 
 
 @pytest.mark.asyncio
+async def test_ph_nan_handling(reef_pi_instance):
+    """Test that NaN values from disabled probes are handled correctly"""
+    mock, reef = reef_pi_instance
+    # Mock a probe returning NaN (happens when probe is disabled)
+    mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes/6/read").respond(
+        200, json="NaN"
+    )
+    result = await reef.ph(6)
+    # Should return None instead of NaN to prevent JSON encoding errors
+    assert result["value"] is None
+
+
+@pytest.mark.asyncio
 async def test_atos(reef_pi_instance):
     mock, reef = reef_pi_instance
     async_api_mock.mock_atos(mock)

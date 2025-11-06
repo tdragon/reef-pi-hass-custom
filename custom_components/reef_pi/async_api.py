@@ -1,6 +1,7 @@
 """Reef Pi api wrapper"""
 
 import logging
+import math
 from datetime import datetime
 from typing import Any, Dict
 
@@ -108,7 +109,14 @@ class ReefApi:
             if not x:
                 return {"value": None}
             latest = sorted(x, key=get_time)[-1].get("value")
-            return {"value": float(latest) if latest else None}
+            if latest:
+                float_value = float(latest)
+                # Check for NaN - return None instead of NaN
+                if math.isnan(float_value):
+                    logger.warning(f"pH readings contained NaN value")
+                    return {"value": None}
+                return {"value": float_value}
+            return {"value": None}
 
         readings = await self._get(f"phprobes/{id}/readings")
         return get_latest_value(readings.get("current"))
@@ -117,8 +125,14 @@ class ReefApi:
         try:
             value = await self._get(f"phprobes/{id}/read")
             if value:
-                return {"value": float(value)}
-        except Exception:
+                float_value = float(value)
+                # Check for NaN - return None instead of NaN
+                if math.isnan(float_value):
+                    logger.warning(f"pH probe {id} returned NaN - probe may be disabled or not reading")
+                    return {"value": None}
+                return {"value": float_value}
+        except Exception as e:
+            logger.error(f"Error reading pH probe {id}: {e}")
             pass
         return {"value": None}
 
