@@ -48,9 +48,57 @@ Additional entities include:
 - `switch.{reef_pi name}_display` to toggle the reef-pi display on or off.
 - `button.{reef_pi name}_reboot` and `button.{reef_pi name}_poweroff` for rebooting or shutting down the controller.
 
+## MQTT Support
+
+The integration supports **optional MQTT** for real-time updates, significantly reducing API polling and providing instant state changes.
+
+### Features
+- **Real-time updates** for temperature, pH, and equipment state changes
+- **Intelligent polling optimization** - skips API calls for devices with recent MQTT updates
+- **Automatic discovery** - MQTT configuration detected from reef-pi automatically
+- **Diagnostic sensors** - monitor MQTT connection status, message counts, and last update times
+
+### How to Enable
+
+**Prerequisites:**
+- reef-pi must have MQTT enabled (Settings → Telemetry → MQTT)
+- Home Assistant must have MQTT integration configured and connected to the same broker
+
+**Steps:**
+1. Open your reef-pi integration in Home Assistant (Settings → Devices & Services → reef-pi → Configure)
+2. If reef-pi has MQTT enabled, you'll see an "Enable MQTT" checkbox
+3. Check the box and click "Submit"
+4. Verify MQTT is working by checking the diagnostic sensors (MQTT Status, MQTT Messages Received)
+
+### Multiple reef-pi Instances
+
+⚠️ **Important:** If you run multiple reef-pi controllers, each instance **must** have a unique MQTT prefix to avoid device collisions!
+
+Configure unique prefixes in each reef-pi instance (Settings → Telemetry → MQTT → Prefix):
+- reef-pi #1: `reef-pi/main-tank`
+- reef-pi #2: `reef-pi/frag-tank`
+- reef-pi #3: `reef-pi/sump`
+
+Without unique prefixes, MQTT messages from different controllers will interfere with each other.
+
+### Diagnostic Sensors
+
+When MQTT is enabled, the following diagnostic sensors are created:
+- **MQTT Status** - Connection status ("connected", "disabled", "no_messages")
+- **MQTT Messages Received** - Total message count
+- **MQTT Last Temperature Update** - Timestamp of last temperature MQTT message
+- **MQTT Last Equipment Update** - Timestamp of last equipment MQTT message
+- **MQTT Last pH Update** - Timestamp of last pH MQTT message
+
+These sensors are visible in the device diagnostics view.
+
 ## NOTE: How to "fix" intermittent pH readings
 On some installations of this addon, it can cause Reef Pi to intermittently drop the reading from both the Reef Pi graph/database and in Home Assistant.
 
-To fix this, in Home Assistant go to Settings > Integrations > Reef-Pi integration and under "Integration entries" click on "Configure" and select "Disable pH sensor" and click on "Submit" and then click on the 3 vertical dots and select "Reload"
+To fix this:
+1. In Home Assistant go to Settings → Integrations → Reef-Pi integration
+2. Under "Integration entries" click on "Configure"
+3. Select "Disable pH sensor" and click "Submit"
+4. Click the 3 vertical dots and select "Reload"
 
-To bring in pH sensor readings into Home Assistant you will need to enable the MQTT functionality from within the Reef Pi systems interface.
+To continue monitoring pH in Home Assistant, enable MQTT support (see "MQTT Support" section above) which provides real-time pH readings without the intermittent drop issues.
