@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import asyncio
+import math
 from datetime import datetime, timedelta, UTC
 
 import voluptuous as vol
@@ -451,8 +452,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         probe_id = int(id)
         # Get current reading
         reading = await self.api.ph(probe_id)
-        if reading["value"] is None:
-            raise ValueError("Cannot read pH value for calibration")
+        if reading["value"] is None or (isinstance(reading["value"], float) and math.isnan(reading["value"])):
+            raise ValueError("Cannot read pH value for calibration. Ensure the probe is enabled and providing valid readings.")
         observed = reading["value"]
         return await self.api.ph_probe_calibrate_point(probe_id, expected, observed, "mid")
 
@@ -461,8 +462,8 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         probe_id = int(id)
         # Get current reading
         reading = await self.api.ph(probe_id)
-        if reading["value"] is None:
-            raise ValueError("Cannot read pH value for calibration")
+        if reading["value"] is None or (isinstance(reading["value"], float) and math.isnan(reading["value"])):
+            raise ValueError("Cannot read pH value for calibration. Ensure the probe is enabled and providing valid readings.")
         observed = reading["value"]
         return await self.api.ph_probe_calibrate_point(probe_id, expected, observed, "high")
 

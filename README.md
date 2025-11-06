@@ -85,89 +85,80 @@ To see if readings have stabilized:
    - Remain within ±0.05 pH of a stable value
    - Typically takes 1-3 minutes in calibration buffer
 
-3. **Note:** Even with the probe disabled, it will still show readings - this is expected and necessary for calibration.
-
 **Tip:** Before running calibration, check that the current reading is close to the expected buffer value (within ~0.5 pH). If it's way off, your probe may need cleaning or the buffer may be contaminated.
+
+#### Important: Probe Enable/Disable
+
+**Do NOT disable the probe during calibration** - the probe must be enabled to provide readings for calibration. Only disable the probe if you need to stop any pH-based automation (like dosing pumps) during calibration.
 
 #### Saltwater/Reef Systems
 
 Use pH 7.0 (midpoint) and pH 10.0 (highpoint) calibration buffers:
 
-1. **Disable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: false`
-2. **Place probe in pH 7.0 buffer** and wait for reading to stabilize
-3. **Run midpoint calibration** using `reef_pi.calibrate_ph_midpoint` with `expected: 7.0`
-4. **Rinse probe** and place in pH 10.0 buffer, wait for reading to stabilize
-5. **Run highpoint calibration** using `reef_pi.calibrate_ph_highpoint` with `expected: 10.0`
-6. **Enable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: true`
+1. **Place probe in pH 7.0 buffer** and wait for reading to stabilize (see monitoring section above)
+2. **Run midpoint calibration** using `reef_pi.calibrate_ph_midpoint` with `expected: 7.0`
+3. **Rinse probe** and place in pH 10.0 buffer, wait for reading to stabilize
+4. **Run highpoint calibration** using `reef_pi.calibrate_ph_highpoint` with `expected: 10.0`
 
 #### Freshwater Systems
 
 Use pH 4.0 (midpoint) and pH 7.0 (highpoint) calibration buffers:
 
-1. **Disable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: false`
-2. **Place probe in pH 4.0 buffer** and wait for reading to stabilize
-3. **Run midpoint calibration** using `reef_pi.calibrate_ph_midpoint` with `expected: 4.0`
-4. **Rinse probe** and place in pH 7.0 buffer, wait for reading to stabilize
-5. **Run highpoint calibration** using `reef_pi.calibrate_ph_highpoint` with `expected: 7.0`
-6. **Enable the pH probe** using `reef_pi.set_ph_probe_enabled` with `enabled: true`
+1. **Place probe in pH 4.0 buffer** and wait for reading to stabilize (see monitoring section above)
+2. **Run midpoint calibration** using `reef_pi.calibrate_ph_midpoint` with `expected: 4.0`
+3. **Rinse probe** and place in pH 7.0 buffer, wait for reading to stabilize
+4. **Run highpoint calibration** using `reef_pi.calibrate_ph_highpoint` with `expected: 7.0`
 
 ### Example Service Calls
 
 **Complete Saltwater Calibration:**
 ```yaml
-# Step 1: Disable the probe
-service: reef_pi.set_ph_probe_enabled
-target:
-  entity_id: sensor.reef_pi_ph
-data:
-  enabled: false
-
-# Step 2: Place probe in pH 7.0 buffer, wait to stabilize, then calibrate
+# Step 1: Place probe in pH 7.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_midpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 7.0
 
-# Step 3: Rinse, place in pH 10.0 buffer, wait to stabilize, then calibrate
+# Step 2: Rinse, place in pH 10.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_highpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 10.0
-
-# Step 4: Re-enable the probe
-service: reef_pi.set_ph_probe_enabled
-target:
-  entity_id: sensor.reef_pi_ph
-data:
-  enabled: true
 ```
 
 **Complete Freshwater Calibration:**
 ```yaml
-# Step 1: Disable the probe
-service: reef_pi.set_ph_probe_enabled
-target:
-  entity_id: sensor.reef_pi_ph
-data:
-  enabled: false
-
-# Step 2: Place probe in pH 4.0 buffer, wait to stabilize, then calibrate
+# Step 1: Place probe in pH 4.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_midpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 4.0
 
-# Step 3: Rinse, place in pH 7.0 buffer, wait to stabilize, then calibrate
+# Step 2: Rinse, place in pH 7.0 buffer, wait to stabilize, then calibrate
 service: reef_pi.calibrate_ph_highpoint
 target:
   entity_id: sensor.reef_pi_ph
 data:
   expected: 7.0
+```
 
-# Step 4: Re-enable the probe
+**Optional: Disable pH Automation During Calibration**
+
+If you have pH-based automation (like dosing pumps) that you want to pause during calibration:
+```yaml
+# Before calibration: disable the probe's control functions
+service: reef_pi.set_ph_probe_enabled
+target:
+  entity_id: sensor.reef_pi_ph
+data:
+  enabled: false
+
+# ... perform calibration ...
+
+# After calibration: re-enable
 service: reef_pi.set_ph_probe_enabled
 target:
   entity_id: sensor.reef_pi_ph
