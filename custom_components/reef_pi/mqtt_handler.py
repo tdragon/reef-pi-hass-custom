@@ -65,13 +65,23 @@ class ReefPiMQTTHandler:
         updated = False
         device_name_lower = device_name.lower()
         device_id = None
+        actual_device_type = None
 
-        if device_type == "temperature":
+        if device_type == "reading":
+            # Sensor readings - determine if temperature or pH by checking name mappings
             if device_name_lower in self.coordinator.tcs_name_to_id:
                 device_id = self.coordinator.tcs_name_to_id[device_name_lower]
                 if metric_type == "reading" and device_id in self.coordinator.tcs:
                     self.coordinator.tcs[device_id]["temperature"] = value
                     _LOGGER.debug("Updated temperature %s to %s", device_name, value)
+                    actual_device_type = "temperature"
+                    updated = True
+            elif device_name_lower in self.coordinator.ph_name_to_id:
+                device_id = self.coordinator.ph_name_to_id[device_name_lower]
+                if metric_type == "reading" and device_id in self.coordinator.ph:
+                    self.coordinator.ph[device_id]["value"] = round(value, 4)
+                    _LOGGER.debug("Updated pH %s to %s", device_name, value)
+                    actual_device_type = "ph"
                     updated = True
 
         elif device_type == "equipment":
@@ -81,19 +91,14 @@ class ReefPiMQTTHandler:
                     state = bool(int(value))
                     self.coordinator.equipment[device_id]["state"] = state
                     _LOGGER.debug("Updated equipment %s to %s", device_name, state)
+                    actual_device_type = "equipment"
                     updated = True
 
-        elif device_type == "ph":
-            if device_name_lower in self.coordinator.ph_name_to_id:
-                device_id = self.coordinator.ph_name_to_id[device_name_lower]
-                if metric_type == "reading" and device_id in self.coordinator.ph:
-                    self.coordinator.ph[device_id]["value"] = round(value, 4)
-                    _LOGGER.debug("Updated pH %s to %s", device_name, value)
-                    updated = True
-
-        if updated and device_id:
+        if updated and device_id and actual_device_type:
             if self.coordinator.mqtt_tracker:
-                self.coordinator.mqtt_tracker.record_mqtt_update(device_type, device_id)
+                self.coordinator.mqtt_tracker.record_mqtt_update(
+                    actual_device_type, device_id
+                )
             self.coordinator.async_set_updated_data(self.coordinator.data)
 
     def _parse_mqtt_topic(self, topic: str) -> tuple[str, str, str] | None:
@@ -102,7 +107,8 @@ class ReefPiMQTTHandler:
         Returns: (device_type, device_name, metric_type) or None
 
         Examples:
-            reef-pi/aquarium/temperature_reading -> ("temperature", "temperature", "reading")
+            reef-pi/aquarium/temperature_reading -> ("reading", "temperature", "reading")
+            reef-pi/aquarium/ph_reading -> ("reading", "ph", "reading")
             reef-pi/aquarium/equipment_heater_state -> ("equipment", "heater", "state")
         """
         if not topic.startswith(f"{self.mqtt_prefix}/"):
@@ -118,6 +124,6 @@ class ReefPiMQTTHandler:
         sensor_match = re.match(r"(.+)_reading$", topic_without_prefix)
         if sensor_match:
             device_name = sensor_match.group(1).replace("_", " ")
-            return ("temperature", device_name, "reading")
+            return ("reading", device_name, "reading")
 
         return None

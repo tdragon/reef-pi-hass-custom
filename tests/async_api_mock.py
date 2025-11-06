@@ -84,13 +84,13 @@ def mock_info(mock, url=REEF_MOCK_URL):
     )
 
 
-def mock_telemetry(mock, url=REEF_MOCK_URL):
+def mock_telemetry(mock, url=REEF_MOCK_URL, mqtt_enabled=False):
     mock.get(f"{url}/api/telemetry").respond(
         200,
         json={
             "adafruitio": {"enable": False, "token": "", "user": "", "prefix": ""},
             "mqtt": {
-                "enable": False,
+                "enable": mqtt_enabled,
                 "server": "tcp://127.0.0.1:1883",
                 "username": "",
                 "client_id": "reef-pi.local",
@@ -174,6 +174,259 @@ def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
     mock_capabilities(mock)
     mock_info(mock)
     mock_telemetry(mock)
+    mock_phprobes(mock)
+    mock_ph6(mock)
+    mock_atos(mock, empty_usage=not has_ato_usage)
+    mock_lights(mock)
+
+    mock.get(f"{url}/api/doser/pumps").respond(
+        200,
+        json=[
+            {
+                "id": "1",
+                "name": "Pump1 sched1",
+                "jack": "1",
+                "pin": 0,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "19",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "2",
+                "name": "Pump1 sched2",
+                "jack": "1",
+                "pin": 0,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "20",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "3",
+                "name": "Pump2 sched1",
+                "jack": "2",
+                "pin": 1,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "21",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "4",
+                "name": "Pump2 sched1",
+                "jack": "2",
+                "pin": 2,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "22",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "5",
+                "name": "No history",
+                "jack": "3",
+                "pin": 0,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "22",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+        ],
+    )
+
+    mock.get(f"{url}/api/doser/pumps/1/usage").respond(
+        200,
+        json={
+            "current": [
+                {"pump": 11, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-18-19:30, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-19:30, 2021"},
+            ],
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-19:30, 2021"},
+            ],
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/2/usage").respond(
+        200,
+        json={
+            "current": [
+                {"pump": 11, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-18-19:30, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-20:30, 2021"},
+            ],
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-21:30, 2021"},
+            ],
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/3/usage").respond(
+        200,
+        json={
+            "current": [
+                {"pump": 11, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-18-19:30, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-21:30, 2021"},
+            ],
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-22:30, 2021"},
+            ],
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/4/usage").respond(
+        200,
+        json={
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-19:30, 2021"},
+            ]
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/5/usage").respond(200, json={})
+
+    mock.get(f"{url}/api/equipment").respond(
+        200,
+        json=[
+            {
+                "id": "1",
+                "name": "Old light",
+                "outlet": "1",
+                "on": True,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "17",
+                "name": "Led light 1",
+                "outlet": "17",
+                "on": False,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "18",
+                "name": "Led light 2",
+                "outlet": "18",
+                "on": True,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "19",
+                "name": "CO2",
+                "outlet": "19",
+                "on": True,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "20",
+                "name": "Heater",
+                "outlet": "20",
+                "on": False,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "21",
+                "name": "Cooler",
+                "outlet": "21",
+                "on": False,
+                "stay_off_on_boot": False,
+            },
+        ],
+    )
+
+    mock.get(f"{url}/api/tcs").respond(
+        200, json=[{"id": "1", "name": "Temp", "fahrenheit": False}]
+    )
+
+    mock.get(f"{url}/api/tcs/1/current_reading").respond(
+        200, json={"temperature": "25.0"}
+    )
+
+    mock.get(f"{url}/api/inlets").respond(200, json={})
+
+
+def mock_all_mqtt_enabled(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
+    mock_signin(mock)
+    mock_capabilities(mock)
+    mock_info(mock)
+    mock_telemetry(mock, mqtt_enabled=True)
     mock_phprobes(mock)
     mock_ph6(mock)
     mock_atos(mock, empty_usage=not has_ato_usage)
