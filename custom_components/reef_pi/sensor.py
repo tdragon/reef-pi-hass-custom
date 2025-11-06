@@ -313,12 +313,12 @@ class ReefPiMQTTStatusSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Return connection status."""
         if not self.api.mqtt_enabled:
-            return "disabled"
+            return "Disabled"
         if not self.api.mqtt_handler:
-            return "not_configured"
+            return "Not configured"
         if self.api.mqtt_tracker and self.api.mqtt_tracker.total_messages > 0:
-            return "connected"
-        return "no_messages"
+            return "Connected"
+        return "No messages"
 
     @property
     def extra_state_attributes(self):
