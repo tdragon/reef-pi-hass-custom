@@ -1,6 +1,6 @@
 [project]
 name = "reef-pi-hass-custom"
-version = "0.4.0"
+version = "0.4.1"
 description = "HomeAssistant Reef PI Integration"
 dependencies = [ "httpx>=0.27.0",]
 requires-python = ">=3.13.2"
