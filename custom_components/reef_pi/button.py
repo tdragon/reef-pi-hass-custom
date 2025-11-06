@@ -18,9 +18,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         for id, macro in coordinator.macros.items()
     ]
 
-    buttons = macros
-    buttons.append(ReefPiRebootButton(coordinator))
-    buttons.append(ReefPiPowerOffButton(coordinator))
+    buttons: list[ButtonEntity] = [
+        *macros,
+        ReefPiRebootButton(coordinator),
+        ReefPiPowerOffButton(coordinator),
+    ]
     async_add_entities(buttons)
 
 
@@ -99,5 +101,3 @@ class ReefPiPowerOffButton(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.api.power_off()
-
-

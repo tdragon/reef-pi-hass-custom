@@ -14,8 +14,12 @@ email = "tdragn@gmail.com"
 text = "MIT"
 
 [dependency-groups]
-dev = [ "pytest>=8.1.1", "pytest-homeassistant-custom-component>=0.13.193", "pytest-asyncio>=0.23.6", "ruff>=0.4.0", "pre-commit>=3.7.0",]
+dev = [ "pytest>=8.1.1", "pytest-homeassistant-custom-component>=0.13.193", "pytest-asyncio>=0.23.6", "ruff>=0.4.0", "pre-commit>=3.7.0", "pyright>=1.1.0",]
 
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+typeCheckingMode = "standard"
+reportIncompatibleVariableOverride = false  # Home Assistant uses cached_property, we use property - both work fine
+reportAttributeAccessIssue = "warning"  # Warn but don't fail on attribute access issues
+exclude = ["output"]

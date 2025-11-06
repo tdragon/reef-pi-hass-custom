@@ -50,6 +50,7 @@ async def test_record_mqtt_update_default_timestamp():
 
     after = datetime.now(timezone.utc)
     assert tracker.total_messages == 1
+    assert tracker.last_message_time is not None
     assert before <= tracker.last_message_time <= after
     assert "temperature" in tracker.last_update_by_type
 

@@ -13,6 +13,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .mqtt_handler import ReefPiMQTTHandler
@@ -403,7 +404,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     if key not in result.keys():
                         result[key] = {
                             "name": pump["name"],
-                            "time": datetime.fromtimestamp(0),
+                            "time": datetime.fromtimestamp(0, tz=dt_util.UTC),
                             "attributes": {pump["id"]: pump},
                         }
                     else:
@@ -417,7 +418,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     ):
                         time = datetime.strptime(
                             current["time"], REEFPI_DATETIME_FORMAT
-                        )
+                        ).replace(tzinfo=dt_util.UTC)
                         if time > result[key]["time"]:
                             result[key]["time"] = time
                             result[key]["attributes"]["duration"] = current["pump"]
@@ -431,20 +432,23 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             atos = {a["id"]: a for a in atos}
             ato_states = {}
             for id in atos.keys():
-                ato_states[id] = {"ts": datetime.fromtimestamp(0), "pump": 0}
+                ato_states[id] = {
+                    "ts": datetime.fromtimestamp(0, tz=dt_util.UTC),
+                    "pump": 0,
+                }
                 states = await self.api.ato(id)
                 ato_state = [s for s in states if s["pump"] != 0]
                 if len(ato_state) > 0:
                     ato_states[id] = ato_state[-1]
                     ato_states[id]["ts"] = datetime.strptime(
                         ato_states[id]["time"], REEFPI_DATETIME_FORMAT
-                    )
+                    ).replace(tzinfo=dt_util.UTC)
                 else:
                     if len(states) > 0:
                         ato_states[id] = states[-1]
                         ato_states[id]["ts"] = datetime.strptime(
                             ato_states[id]["time"], REEFPI_DATETIME_FORMAT
-                        )
+                        ).replace(tzinfo=dt_util.UTC)
 
             self.ato = atos
             self.ato_states = ato_states

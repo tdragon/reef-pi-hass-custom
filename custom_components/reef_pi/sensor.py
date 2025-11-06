@@ -10,7 +10,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import DEGREE, EntityCategory, UnitOfTemperature
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import slugify
+from homeassistant.util import dt as dt_util, slugify
 
 from .const import _LOGGER, DOMAIN
 
@@ -177,7 +177,7 @@ class ReefPiPh(CoordinatorEntity, SensorEntity):
         return self._id in self.api.ph.keys() and self.api.ph[self._id]["value"]
 
     @property
-    def state(self):
+    def native_value(self):
         """Return the state of the sensor."""
         return self.api.ph[self._id]["value"]
 
@@ -223,12 +223,12 @@ class ReefPiPump(CoordinatorEntity, SensorEntity):
         """Return if available"""
         return self._id in self.api.pumps.keys() and self.api.pumps[self._id][
             "time"
-        ] != datetime.fromtimestamp(0)
+        ] != datetime.fromtimestamp(0, tz=dt_util.UTC)
 
     @property
-    def state(self):
+    def native_value(self):
         """Return the state of the sensor."""
-        return self.api.pumps[self._id]["time"].isoformat()
+        return self.api.pumps[self._id]["time"]
 
     @property
     def extra_state_attributes(self):
@@ -275,15 +275,15 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
         """Return if available"""
         return self._id in self.api.ato_states.keys() and self.api.ato_states[self._id][
             "ts"
-        ] != datetime.fromtimestamp(0)
+        ] != datetime.fromtimestamp(0, tz=dt_util.UTC)
 
     @property
-    def state(self):
+    def native_value(self):
         """Return the state of the sensor."""
         if self._show_pump:
             return self.api.ato_states[self._id]["pump"]
         else:
-            return self.api.ato_states[self._id]["ts"].isoformat()
+            return self.api.ato_states[self._id]["ts"]
 
     @property
     def extra_state_attributes(self):

@@ -66,7 +66,7 @@ async def test_mqtt_message_received_temperature(mqtt_handler, mock_coordinator)
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -84,7 +84,7 @@ async def test_mqtt_message_received_equipment_on(mqtt_handler, mock_coordinator
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -102,7 +102,7 @@ async def test_mqtt_message_received_equipment_off(mqtt_handler, mock_coordinato
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -120,7 +120,7 @@ async def test_mqtt_message_received_ph(mqtt_handler, mock_coordinator):
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -140,7 +140,7 @@ async def test_mqtt_message_received_ph_rounds_to_4_decimals(
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -157,7 +157,7 @@ async def test_mqtt_message_received_unregistered_topic(mqtt_handler, mock_coord
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -175,7 +175,7 @@ async def test_mqtt_message_received_invalid_payload(mqtt_handler, mock_coordina
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     mqtt_handler._mqtt_message_received(msg)
@@ -218,7 +218,7 @@ async def test_mqtt_prefix_custom():
         "1",
     )
 
-    handler = ReefPiMQTTHandler(hass, coordinator)
+    handler = ReefPiMQTTHandler(hass, coordinator)  # type: ignore[arg-type]
 
     msg = ReceiveMessage(
         topic="reef-pi/aquarium/temp_reading",
@@ -226,7 +226,7 @@ async def test_mqtt_prefix_custom():
         qos=0,
         retain=False,
         subscribed_topic="reef-pi/aquarium/#",
-        timestamp=None,
+        timestamp=0.0,
     )
 
     handler._mqtt_message_received(msg)

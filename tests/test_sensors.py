@@ -78,7 +78,7 @@ async def test_ato(hass, async_api_mock_instance):
 
     state = hass.states.get("sensor.reef_pi_test_ato_last_run")
     assert state
-    assert state.state == "2022-01-11T09:01:00"
+    assert state.state == "2022-01-11T09:01:00+00:00"
     assert state.name == "Reef PI Test ATO Last Run"
 
 

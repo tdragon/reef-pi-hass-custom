@@ -217,7 +217,7 @@ class ReefApi:
     async def ph_probe_calibrate_point(
         self, id: int, expected: float, observed: float, type_: str | None = None
     ) -> bool:
-        payload = {"expected": expected, "observed": observed}
+        payload: dict[str, float | str] = {"expected": expected, "observed": observed}
         if type_:
             payload["type"] = type_
         return await self._post(f"phprobes/{id}/calibratepoint", payload)
