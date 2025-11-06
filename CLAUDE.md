@@ -145,9 +145,47 @@ When MQTT is enabled, the integration creates diagnostic sensors (visible in dev
 
 These sensors help monitor MQTT connectivity and troubleshoot issues.
 
-## Version Management
+## Version Management & Releases
 
-Current version: 0.3.17 (maintained in both pyproject.toml and manifest.json)
+Current version: 0.4.1 (maintained in both pyproject.toml and manifest.json)
+
+### Creating a Release
+
+The project uses an automated release workflow triggered by git tags:
+
+```bash
+# Semantic version bump (recommended)
+./scripts/release.sh patch    # 0.4.1 → 0.4.2
+./scripts/release.sh minor    # 0.4.1 → 0.5.0
+./scripts/release.sh major    # 0.4.1 → 1.0.0
+
+# Explicit version
+./scripts/release.sh 0.5.0
+```
+
+**What the script does:**
+1. Updates version in `pyproject.toml` and `custom_components/reef_pi/manifest.json`
+2. Creates a commit: `chore: release vX.Y.Z`
+3. Creates and pushes a git tag: `vX.Y.Z`
+4. Pushes everything to GitHub
+
+**What happens automatically on GitHub:**
+1. GitHub Actions workflow triggers on tag push
+2. Runs full test suite (pytest + hassfest)
+3. Builds `reef_pi.zip` package
+4. Creates GitHub release (marked as prerelease)
+5. Attaches zip file as release asset
+6. Auto-generates release notes from commits
+
+**Prerequisites:**
+- All changes must be committed before running release script
+- Should be on `master` branch (script will warn if not)
+- Tests should pass locally before releasing
+
+**Notes:**
+- Release script validates version format and checks for duplicate tags
+- If tests fail on GitHub, the release will not be created
+- All releases are marked as prerelease by default
 
 ## Known Issues
 

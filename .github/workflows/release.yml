@@ -1,7 +1,9 @@
 name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   pytest:
@@ -13,38 +15,41 @@ jobs:
   release:
     needs: [pytest, hassfest]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-
-      - name: Install tools
+      - name: Extract version from tag
+        id: version
         run: |
-          pip install toml
-          sudo apt-get update && sudo apt-get install -y jq
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
 
-      - name: Tag commit
-        id: tag
-        run: |
-          version=$(python -c "import toml; d=toml.load('pyproject.toml'); print(d['project']['version'])")
-          git tag v$version
-          git push origin v$version
-          echo "::set-output name=new_version::$version"
-
-      - name: Prepare release
+      - name: Prepare release package
         run: |
           bash scripts/prepare_release.sh
+
+      - name: Verify package was created
+        run: |
+          if [ ! -f output/reef_pi.zip ]; then
+            echo "Error: output/reef_pi.zip was not created"
+            exit 1
+          fi
+          echo "Package size: $(du -h output/reef_pi.zip | cut -f1)"
+          echo "Package contents:"
+          unzip -l output/reef_pi.zip | head -20
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.tag.outputs.new_version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
           prerelease: true
           files: output/reef_pi.zip
           generate_release_notes: true
+          fail_on_unmatched_files: true

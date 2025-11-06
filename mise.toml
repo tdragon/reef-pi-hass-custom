@@ -1,0 +1,15 @@
+[env]
+_.python.venv = { path = ".venv", create = false }
+
+[tools]
+pre-commit = "latest"
+uv = "latest"
+jq = "latest"
+
+[tasks.init]
+description = "install dependencies"
+run = "uv sync"
+
+[tasks.release]
+description = "start new release"
+run = "./scripts/release.sh $1"
