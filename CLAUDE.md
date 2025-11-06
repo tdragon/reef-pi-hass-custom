@@ -111,11 +111,19 @@ Optional configuration (via Options):
 ### MQTT Support
 
 The integration automatically discovers MQTT configuration from reef-pi:
-- Queries `/api/telemetry` during setup to detect MQTT availability and prefix
+- **Initial setup**: Queries `/api/telemetry` during config flow to detect MQTT availability and prefix
+- **Auto-refresh**: MQTT config is refreshed every time options dialog is opened
 - If reef-pi has MQTT enabled, an option appears in the integration settings
 - Users can enable/disable MQTT updates without manual configuration
 - MQTT provides real-time state updates (temperature, equipment, pH)
 - API polling continues as fallback and for device discovery
+
+**Upgrade note**: If you had the integration installed before MQTT support was added, simply open the integration options once to auto-discover MQTT settings.
+
+If you change MQTT settings in reef-pi (e.g., change prefix or enable/disable):
+1. Open the integration options in Home Assistant
+2. MQTT config will automatically refresh and show updated settings
+3. Reload the integration if you changed the prefix
 
 ## Version Management
 

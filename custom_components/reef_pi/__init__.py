@@ -221,7 +221,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         ],
                         "attributes": sensor,
                     }
-                    self.tcs_name_to_id[sensor["name"]] = sensor["id"]
+                    self.tcs_name_to_id[sensor["name"].lower()] = sensor["id"]
                 self.tcs = all_tcs
 
     async def update_equipment(self):
@@ -237,7 +237,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": device["on"],
                         "attributes": device,
                     }
-                    self.equipment_name_to_id[device["name"]] = device["id"]
+                    self.equipment_name_to_id[device["name"].lower()] = device["id"]
                 self.equipment = all_equipment
 
     async def update_timers(self):
@@ -286,7 +286,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "value": value,
                         "attributes": attributes,
                     }
-                    self.ph_name_to_id[probe["name"]] = probe["id"]
+                    self.ph_name_to_id[probe["name"].lower()] = probe["id"]
                 self.ph = all_ph
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
 
@@ -314,7 +314,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                                 "state": state,
                                 "attributes": light["channels"][channel],
                             }
-                            self.light_name_to_id[combined_name] = id
+                            self.light_name_to_id[combined_name.lower()] = id
 
                 self.lights = all_light
 
@@ -345,7 +345,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": inlet_value,
                         "attributes": inlet,
                     }
-                    self.inlet_name_to_id[inlet["name"]] = inlet["id"]
+                    self.inlet_name_to_id[inlet["name"].lower()] = inlet["id"]
                 self.inlets = all_inlet
 
     async def update_pumps(self):

@@ -63,34 +63,32 @@ class ReefPiMQTTHandler:
     ) -> None:
         """Update device state from MQTT message."""
         updated = False
+        device_name_lower = device_name.lower()
 
-        if (
-            device_type == "temperature"
-            and device_name in self.coordinator.tcs_name_to_id
-        ):
-            device_id = self.coordinator.tcs_name_to_id[device_name]
-            if metric_type == "reading" and device_id in self.coordinator.tcs:
-                self.coordinator.tcs[device_id]["temperature"] = value
-                _LOGGER.debug("Updated temperature %s to %s", device_name, value)
-                updated = True
+        if device_type == "temperature":
+            if device_name_lower in self.coordinator.tcs_name_to_id:
+                device_id = self.coordinator.tcs_name_to_id[device_name_lower]
+                if metric_type == "reading" and device_id in self.coordinator.tcs:
+                    self.coordinator.tcs[device_id]["temperature"] = value
+                    _LOGGER.debug("Updated temperature %s to %s", device_name, value)
+                    updated = True
 
-        elif (
-            device_type == "equipment"
-            and device_name in self.coordinator.equipment_name_to_id
-        ):
-            device_id = self.coordinator.equipment_name_to_id[device_name]
-            if metric_type == "state" and device_id in self.coordinator.equipment:
-                state = bool(int(value))
-                self.coordinator.equipment[device_id]["state"] = state
-                _LOGGER.debug("Updated equipment %s to %s", device_name, state)
-                updated = True
+        elif device_type == "equipment":
+            if device_name_lower in self.coordinator.equipment_name_to_id:
+                device_id = self.coordinator.equipment_name_to_id[device_name_lower]
+                if metric_type == "state" and device_id in self.coordinator.equipment:
+                    state = bool(int(value))
+                    self.coordinator.equipment[device_id]["state"] = state
+                    _LOGGER.debug("Updated equipment %s to %s", device_name, state)
+                    updated = True
 
-        elif device_type == "ph" and device_name in self.coordinator.ph_name_to_id:
-            device_id = self.coordinator.ph_name_to_id[device_name]
-            if metric_type == "reading" and device_id in self.coordinator.ph:
-                self.coordinator.ph[device_id]["value"] = round(value, 4)
-                _LOGGER.debug("Updated pH %s to %s", device_name, value)
-                updated = True
+        elif device_type == "ph":
+            if device_name_lower in self.coordinator.ph_name_to_id:
+                device_id = self.coordinator.ph_name_to_id[device_name_lower]
+                if metric_type == "reading" and device_id in self.coordinator.ph:
+                    self.coordinator.ph[device_id]["value"] = round(value, 4)
+                    _LOGGER.debug("Updated pH %s to %s", device_name, value)
+                    updated = True
 
         if updated:
             self.coordinator.async_set_updated_data(self.coordinator.data)
@@ -101,24 +99,22 @@ class ReefPiMQTTHandler:
         Returns: (device_type, device_name, metric_type) or None
 
         Examples:
-            reef-pi/aquarium/Tank_Temp_reading -> ("temperature", "Tank Temp", "reading")
-            reef-pi/aquarium/equipment_Heater-state -> ("equipment", "Heater", "state")
+            reef-pi/aquarium/temperature_reading -> ("temperature", "temperature", "reading")
+            reef-pi/aquarium/equipment_heater_state -> ("equipment", "heater", "state")
         """
         if not topic.startswith(f"{self.mqtt_prefix}/"):
             return None
 
         topic_without_prefix = topic[len(self.mqtt_prefix) + 1 :]
 
-        equipment_match = re.match(r"equipment_(.+)-state$", topic_without_prefix)
+        equipment_match = re.match(r"equipment_(.+)_state$", topic_without_prefix)
         if equipment_match:
             device_name = equipment_match.group(1).replace("_", " ")
             return ("equipment", device_name, "state")
 
-        sensor_match = re.match(r"(.+)_(reading|heater|cooler)$", topic_without_prefix)
+        sensor_match = re.match(r"(.+)_reading$", topic_without_prefix)
         if sensor_match:
             device_name = sensor_match.group(1).replace("_", " ")
-            metric_type = sensor_match.group(2)
-            if metric_type == "reading":
-                return ("temperature", device_name, metric_type)
+            return ("temperature", device_name, "reading")
 
         return None

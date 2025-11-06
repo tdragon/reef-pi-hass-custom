@@ -94,7 +94,40 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class ReefPiConfigFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, _user_input=None):
         """Manage the options."""
+        await self._refresh_mqtt_config()
         return await self.async_step_user()
+
+    async def _refresh_mqtt_config(self):
+        """Refresh MQTT configuration from reef-pi."""
+        try:
+            hub = ReefApi(
+                self.config_entry.data["host"], verify=self.config_entry.data["verify"]
+            )
+            await hub.authenticate(
+                self.config_entry.data["username"], self.config_entry.data["password"]
+            )
+            telemetry = await hub.telemetry_config()
+            mqtt_config = telemetry.get("mqtt", {})
+            mqtt_prefix = mqtt_config.get("prefix", "reef-pi")
+            mqtt_available = mqtt_config.get("enable", False)
+
+            if (
+                self.config_entry.data.get("mqtt_prefix") != mqtt_prefix
+                or self.config_entry.data.get("mqtt_available") != mqtt_available
+            ):
+                new_data = dict(self.config_entry.data)
+                new_data["mqtt_prefix"] = mqtt_prefix
+                new_data["mqtt_available"] = mqtt_available
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data=new_data
+                )
+                _LOGGER.info(
+                    "MQTT config refreshed: available=%s, prefix=%s",
+                    mqtt_available,
+                    mqtt_prefix,
+                )
+        except Exception as ex:
+            _LOGGER.warning("Failed to refresh MQTT config: %s", ex)
 
     async def async_step_user(self, user_input=None) -> config_entries.ConfigFlowResult:
         """Handle a flow initialized by the user."""

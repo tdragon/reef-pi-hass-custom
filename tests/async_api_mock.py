@@ -84,6 +84,38 @@ def mock_info(mock, url=REEF_MOCK_URL):
     )
 
 
+def mock_telemetry(mock, url=REEF_MOCK_URL):
+    mock.get(f"{url}/api/telemetry").respond(
+        200,
+        json={
+            "adafruitio": {"enable": False, "token": "", "user": "", "prefix": ""},
+            "mqtt": {
+                "enable": False,
+                "server": "tcp://127.0.0.1:1883",
+                "username": "",
+                "client_id": "reef-pi.local",
+                "password": "",
+                "qos": 0,
+                "retained": False,
+                "prefix": "reef-pi",
+            },
+            "mailer": {
+                "server": "",
+                "port": 0,
+                "from": "",
+                "username": "",
+                "password": "",
+                "to": [],
+            },
+            "notify": False,
+            "prometheus": False,
+            "throttle": 30,
+            "historical_limit": 7,
+            "current_limit": 1,
+        },
+    )
+
+
 def mock_atos(mock, url=REEF_MOCK_URL, empty_usage=False):
     mock.get(f"{url}/api/atos").respond(
         200,
@@ -141,6 +173,7 @@ def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
     mock_signin(mock)
     mock_capabilities(mock)
     mock_info(mock)
+    mock_telemetry(mock)
     mock_phprobes(mock)
     mock_ph6(mock)
     mock_atos(mock, empty_usage=not has_ato_usage)
