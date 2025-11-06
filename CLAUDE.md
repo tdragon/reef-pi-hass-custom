@@ -81,17 +81,26 @@ Each platform file (sensor.py, switch.py, light.py, binary_sensor.py, button.py)
 **mqtt_handler.py** - Handles MQTT subscriptions and message processing
 - ReefPiMQTTHandler class manages all MQTT operations
 - Topic parsing: Converts reef-pi MQTT topics to device updates
-  - Equipment: `{prefix}/equipment_{name}-state` → state (0.0/1.0)
+  - Equipment: `{prefix}/equipment_{name}_state` → state (0.0/1.0)
   - Temperature: `{prefix}/{name}_reading` → temperature value
   - pH: `{prefix}/{name}_reading` → pH value (4 decimal places)
-- Name-to-ID correlation: Uses device names from MQTT topics to look up device IDs
+- Name-to-ID correlation: Uses device names from MQTT topics to look up device IDs (case-insensitive)
 - Real-time updates: MQTT messages trigger immediate entity state updates via coordinator
 
-**Hybrid Approach**:
+**mqtt_tracker.py** - Tracks MQTT updates and optimizes polling
+- ReefPiMQTTTracker class manages all tracking data
+- Tracks total message count, last update times per device type and device ID
+- Records update source ("mqtt" or "polling") for each device
+- Provides `should_skip_polling()` method to optimize API calls
+- Skip threshold: 2 minutes (devices with recent MQTT updates skip polling)
+
+**Hybrid Approach with Optimization**:
 - API polling discovers devices and maintains name-to-ID mappings
 - MQTT provides real-time state updates for existing devices
 - Coordinator stores both device data (by ID) and name-to-ID mappings
 - MQTT messages update coordinator data, which propagates to entities
+- **Polling optimization**: Devices with recent MQTT updates (< 2 min) skip API polling
+- Diagnostic sensors show MQTT connection status, message counts, and last update times
 
 ## Configuration
 
@@ -124,6 +133,17 @@ If you change MQTT settings in reef-pi (e.g., change prefix or enable/disable):
 1. Open the integration options in Home Assistant
 2. MQTT config will automatically refresh and show updated settings
 3. Reload the integration if you changed the prefix
+
+### MQTT Diagnostic Sensors
+
+When MQTT is enabled, the integration creates diagnostic sensors (visible in device diagnostics page):
+- **MQTT Status** - Shows "connected", "disabled", or "no_messages"
+- **MQTT Messages Received** - Total count of MQTT messages (counter)
+- **MQTT Last Temperature Update** - Timestamp of last temperature MQTT message
+- **MQTT Last Equipment Update** - Timestamp of last equipment MQTT message
+- **MQTT Last pH Update** - Timestamp of last pH MQTT message
+
+These sensors help monitor MQTT connectivity and troubleshoot issues.
 
 ## Version Management
 

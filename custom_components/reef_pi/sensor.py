@@ -7,7 +7,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import DEGREE, UnitOfTemperature
+from homeassistant.const import DEGREE, EntityCategory, UnitOfTemperature
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
@@ -43,6 +43,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities([ReefPiBasicInfo(coordinator)])
     async_add_entities(pumps)
     async_add_entities(atos)
+
+    if coordinator.mqtt_enabled and coordinator.mqtt_tracker:
+        diagnostic_sensors = [
+            ReefPiMQTTStatusSensor(coordinator),
+            ReefPiMQTTMessageCountSensor(coordinator),
+            ReefPiMQTTLastUpdateSensor(coordinator, "temperature"),
+            ReefPiMQTTLastUpdateSensor(coordinator, "equipment"),
+            ReefPiMQTTLastUpdateSensor(coordinator, "ph"),
+        ]
+        async_add_entities(diagnostic_sensors)
 
 
 class ReefPiBasicInfo(CoordinatorEntity, SensorEntity):
@@ -278,3 +288,106 @@ class ReefPiATO(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         return self.api.ato_states[self._id]
+
+
+class ReefPiMQTTStatusSensor(CoordinatorEntity, SensorEntity):
+    """Sensor showing MQTT connection status."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:connection"
+
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self.api = coordinator
+
+    @property
+    def name(self):
+        return "MQTT Status"
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.unique_id}_mqtt_status"
+
+    @property
+    def native_value(self):
+        """Return connection status."""
+        if not self.api.mqtt_enabled:
+            return "disabled"
+        if not self.api.mqtt_handler:
+            return "not_configured"
+        if self.api.mqtt_tracker and self.api.mqtt_tracker.total_messages > 0:
+            return "connected"
+        return "no_messages"
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "mqtt_prefix": self.api.mqtt_prefix,
+            "mqtt_enabled": self.api.mqtt_enabled,
+        }
+
+    @property
+    def device_info(self):
+        return self.api.device_info
+
+
+class ReefPiMQTTMessageCountSensor(CoordinatorEntity, SensorEntity):
+    """Sensor showing total MQTT messages received."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:counter"
+
+    def __init__(self, coordinator):
+        super().__init__(coordinator)
+        self.api = coordinator
+
+    @property
+    def name(self):
+        return "MQTT Messages Received"
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.unique_id}_mqtt_message_count"
+
+    @property
+    def native_value(self):
+        return self.api.mqtt_tracker.total_messages if self.api.mqtt_tracker else 0
+
+    @property
+    def device_info(self):
+        return self.api.device_info
+
+
+class ReefPiMQTTLastUpdateSensor(CoordinatorEntity, SensorEntity):
+    """Sensor showing when last MQTT message was received for a device type."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator, device_type):
+        super().__init__(coordinator)
+        self._device_type = device_type
+        self.api = coordinator
+
+    @property
+    def name(self):
+        return f"MQTT Last {self._device_type.title()} Update"
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.unique_id}_mqtt_last_{self._device_type}"
+
+    @property
+    def native_value(self):
+        """Return timestamp of last MQTT message."""
+        if self.api.mqtt_tracker:
+            return self.api.mqtt_tracker.get_last_update_time(self._device_type)
+        return None
+
+    @property
+    def device_info(self):
+        return self.api.device_info

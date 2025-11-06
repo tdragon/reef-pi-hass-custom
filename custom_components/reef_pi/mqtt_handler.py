@@ -64,6 +64,7 @@ class ReefPiMQTTHandler:
         """Update device state from MQTT message."""
         updated = False
         device_name_lower = device_name.lower()
+        device_id = None
 
         if device_type == "temperature":
             if device_name_lower in self.coordinator.tcs_name_to_id:
@@ -90,7 +91,9 @@ class ReefPiMQTTHandler:
                     _LOGGER.debug("Updated pH %s to %s", device_name, value)
                     updated = True
 
-        if updated:
+        if updated and device_id:
+            if self.coordinator.mqtt_tracker:
+                self.coordinator.mqtt_tracker.record_mqtt_update(device_type, device_id)
             self.coordinator.async_set_updated_data(self.coordinator.data)
 
     def _parse_mqtt_topic(self, topic: str) -> tuple[str, str, str] | None:
