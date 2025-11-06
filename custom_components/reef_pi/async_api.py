@@ -87,6 +87,9 @@ class ReefApi:
     async def capabilities(self):
         return await self._get("capabilities")
 
+    async def telemetry_config(self):
+        return await self._get("telemetry")
+
     async def errors(self):
         return await self._get("errors")
 

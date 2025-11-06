@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import json
-import asyncio
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +15,8 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
+from .mqtt_handler import ReefPiMQTTHandler
+from .mqtt_tracker import ReefPiMQTTTracker
 from .const import (
     _LOGGER,
     CONFIG_OPTIONS,
@@ -23,6 +24,7 @@ from .const import (
     DOMAIN,
     HOST,
     MANUFACTURER,
+    MQTT_ENABLED,
     PASSWORD,
     UPDATE_INTERVAL_CFG,
     UPDATE_INTERVAL_MIN,
@@ -56,6 +58,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
+
+    await coordinator.async_setup_mqtt()
 
     undo_listener = entry.add_update_listener(update_listener)
 
@@ -137,9 +141,29 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.timers = {}
         self.display = {}
 
+        self.tcs_name_to_id = {}
+        self.equipment_name_to_id = {}
+        self.ph_name_to_id = {}
+        self.inlet_name_to_id = {}
+        self.light_name_to_id = {}
+
+        self.mqtt_prefix = config_entry.data.get("mqtt_prefix", "reef-pi")
+        self.mqtt_enabled = config_entry.options.get(MQTT_ENABLED) or False
+        self.mqtt_handler = None
+        self.mqtt_tracker = ReefPiMQTTTracker() if self.mqtt_enabled else None
+
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
+
+    async def async_setup_mqtt(self):
+        """Setup MQTT subscriptions."""
+        if not self.mqtt_enabled:
+            _LOGGER.debug("MQTT is disabled, skipping subscription")
+            return
+
+        self.mqtt_handler = ReefPiMQTTHandler(self.hass, self)
+        await self.mqtt_handler.async_subscribe()
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -191,14 +215,31 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("temperature updated: %d", len(sensors))
                 all_tcs = {}
                 for sensor in sensors:
-                    all_tcs[sensor["id"]] = {
+                    sensor_id = sensor["id"]
+
+                    if self.mqtt_tracker and self.mqtt_tracker.should_skip_polling(
+                        "temperature", sensor_id
+                    ):
+                        if sensor_id in self.tcs:
+                            all_tcs[sensor_id] = self.tcs[sensor_id]
+                        self.tcs_name_to_id[sensor["name"].lower()] = sensor_id
+                        continue
+
+                    all_tcs[sensor_id] = {
                         "name": sensor["name"],
                         "fahrenheit": sensor["fahrenheit"],
-                        "temperature": (await self.api.temperature(sensor["id"]))[
+                        "temperature": (await self.api.temperature(sensor_id))[
                             "temperature"
                         ],
                         "attributes": sensor,
                     }
+                    self.tcs_name_to_id[sensor["name"].lower()] = sensor_id
+
+                    if self.mqtt_tracker:
+                        self.mqtt_tracker.record_polling_update(
+                            "temperature", sensor_id
+                        )
+
                 self.tcs = all_tcs
 
     async def update_equipment(self):
@@ -209,11 +250,26 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
                 all_equipment = {}
                 for device in equipment:
-                    all_equipment[device["id"]] = {
+                    device_id = device["id"]
+
+                    if self.mqtt_tracker and self.mqtt_tracker.should_skip_polling(
+                        "equipment", device_id
+                    ):
+                        if device_id in self.equipment:
+                            all_equipment[device_id] = self.equipment[device_id]
+                        self.equipment_name_to_id[device["name"].lower()] = device_id
+                        continue
+
+                    all_equipment[device_id] = {
                         "name": device["name"],
                         "state": device["on"],
                         "attributes": device,
                     }
+                    self.equipment_name_to_id[device["name"].lower()] = device_id
+
+                    if self.mqtt_tracker:
+                        self.mqtt_tracker.record_polling_update("equipment", device_id)
+
                 self.equipment = all_equipment
 
     async def update_timers(self):
@@ -253,15 +309,30 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("pH probes updated: %s", json.dumps(probes))
                 all_ph = {}
                 for probe in probes:
+                    probe_id = probe["id"]
+
+                    if self.mqtt_tracker and self.mqtt_tracker.should_skip_polling(
+                        "ph", probe_id
+                    ):
+                        if probe_id in self.ph:
+                            all_ph[probe_id] = self.ph[probe_id]
+                        self.ph_name_to_id[probe["name"].lower()] = probe_id
+                        continue
+
                     attributes = probe
-                    ph = await self.api.ph_readings(probe["id"])
+                    ph = await self.api.ph_readings(probe_id)
                     value = round(ph["value"], 4) if ph["value"] else None
 
-                    all_ph[probe["id"]] = {
+                    all_ph[probe_id] = {
                         "name": probe["name"],
                         "value": value,
                         "attributes": attributes,
                     }
+                    self.ph_name_to_id[probe["name"].lower()] = probe_id
+
+                    if self.mqtt_tracker:
+                        self.mqtt_tracker.record_polling_update("ph", probe_id)
+
                 self.ph = all_ph
                 _LOGGER.debug(f"Got {len(all_ph)} pH probes: {all_ph}")
 
@@ -280,14 +351,16 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                             channel_name = light["channels"][channel]["name"]
 
                             state = light["channels"][channel]["value"] > 0
+                            combined_name = f"{light_name}-{channel_name}"
                             all_light[id] = {
-                                "name": f"{light_name}-{channel_name}",
+                                "name": combined_name,
                                 "channel_id": channel,
                                 "light_id": light_id,
                                 "value": light["channels"][channel]["value"],
                                 "state": state,
                                 "attributes": light["channels"][channel],
                             }
+                            self.light_name_to_id[combined_name.lower()] = id
 
                 self.lights = all_light
 
@@ -318,6 +391,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": inlet_value,
                         "attributes": inlet,
                     }
+                    self.inlet_name_to_id[inlet["name"].lower()] = inlet["id"]
                 self.inlets = all_inlet
 
     async def update_pumps(self):
@@ -438,7 +512,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
     async def display_brightness(self, value: int):
         await self.api.display_brightness(value)
         self.display["brightness"] = value
-
 
     async def timer_control(self, id, state):
         await self.api.timer_control(id, state)
