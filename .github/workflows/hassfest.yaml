@@ -2,6 +2,10 @@ name: hassfest
 
 on:
   push:
+    branches:
+      - '**'  # All branches
+    tags-ignore:
+      - '**'  # Don't run on tag pushes (release workflow handles this)
   pull_request:
   schedule:
     - cron: "0 0 * * *"
