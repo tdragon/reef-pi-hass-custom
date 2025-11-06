@@ -9,7 +9,3 @@ jq = "latest"
 [tasks.init]
 description = "install dependencies"
 run = "uv sync"
-
-[tasks.release]
-description = "start new release"
-run = "./scripts/release.sh $1"

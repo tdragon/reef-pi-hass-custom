@@ -1,4 +1,5 @@
 __pycache__
+*.pyc
 *~
 .DS_Store
 
@@ -7,6 +8,7 @@ __pycache__
 /output
 cookie*
 auth*
+.env
 
 # PDM (migrated to uv)
 pdm.lock

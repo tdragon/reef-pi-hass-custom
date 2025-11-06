@@ -29,6 +29,80 @@ uv run ruff check --fix
 uv run ruff format
 ```
 
+### Type Checking
+- Uses pyright for static type checking
+- Pre-commit hook runs pyright automatically
+- Run manually: `uv run pyright`
+
+## Local Deployment
+
+For rapid testing on your Home Assistant instance:
+
+### Setup (one-time)
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` with your Home Assistant credentials:
+   ```bash
+   # Your Home Assistant SSH connection
+   HA_SERVER=root@homeassistant.local
+
+   # Path to your SSH private key
+   HA_KEY=~/.ssh/id_rsa
+   ```
+
+3. Ensure you can SSH to your Home Assistant server:
+   ```bash
+   ssh -i ~/.ssh/id_rsa root@homeassistant.local
+   ```
+
+### Deploy
+
+Deploy your local changes to Home Assistant:
+
+```bash
+./scripts/deploy.sh
+```
+
+**What it does:**
+1. Validates SSH connection
+2. Copies all integration files to `config/custom_components/reef_pi/`
+3. Automatically excludes `__pycache__` and `.pyc` files
+4. Restarts Home Assistant core
+5. Verifies deployment
+
+**Note:** Uses tar+ssh for reliable file transfer that works everywhere.
+
+### Dry-run (Preview Changes)
+
+Preview what would be deployed without making any changes:
+
+```bash
+./scripts/deploy.sh --dry-run
+```
+
+**Dry-run features:**
+- Shows all files that would be added, modified, or deleted
+- Color-coded output: `+ NEW`, `M MODIFIED`, `- DELETED`
+- Optional detailed diff view (line-by-line changes)
+- No files are changed, no restart triggered
+- Perfect for reviewing changes before deployment
+
+**Example output:**
+```
+═══════════════════════════════════════════════════════════════
+Changes that would be deployed:
+═══════════════════════════════════════════════════════════════
+M MODIFIED: __init__.py
+M MODIFIED: sensor.py
++ NEW: mqtt_handler.py
+```
+
+**Note:** The `.env` file is git-ignored to protect your credentials.
+
 ## Architecture
 
 ### Core Components
