@@ -9,12 +9,12 @@ This is a Home Assistant custom integration for Reef-Pi, an open-source reef tan
 ## Development Commands
 
 ### Package Management
-- Uses PDM (Python Dependency Manager)
-- Install dependencies: `pdm install`
-- Pre-commit hooks are automatically installed via `post_install` script
+- Uses uv (fast Python package manager)
+- Install dependencies: `uv sync`
+- Pre-commit hooks must be installed manually: `uv run pre-commit install`
 
 ### Testing
-- Run all tests: `pdm run pytest`
+- Run all tests: `uv run pytest`
 - Tests use `pytest-homeassistant-custom-component` and `pytest-asyncio`
 - Async tests run with `asyncio_mode = auto`
 
@@ -25,8 +25,8 @@ This is a Home Assistant custom integration for Reef-Pi, an open-source reef tan
 
 ### Manual Linting
 ```bash
-pdm run ruff check --fix
-pdm run ruff format
+uv run ruff check --fix
+uv run ruff format
 ```
 
 ## Architecture

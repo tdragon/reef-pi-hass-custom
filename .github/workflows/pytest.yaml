@@ -23,11 +23,11 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup PDM
-        uses: pdm-project/setup-pdm@v4
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-          pdm install
+          uv sync
       - name: Test with pytest
         run: |
-          pdm run pytest
+          uv run pytest
