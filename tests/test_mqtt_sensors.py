@@ -129,7 +129,7 @@ async def test_mqtt_status_sensor_no_messages(hass, async_api_mock_mqtt_enabled)
 
     state = hass.states.get("sensor.reef_pi_mqtt_status")
     assert state is not None
-    assert state.state == "no_messages"
+    assert state.state == "No messages"
 
 
 async def test_mqtt_message_count_sensor(hass, async_api_mock_mqtt_enabled):

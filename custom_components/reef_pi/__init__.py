@@ -16,6 +16,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .async_api import CannotConnect, InvalidAuth, ReefApi
 from .mqtt_handler import ReefPiMQTTHandler
+from .mqtt_name_mapper import ReefPiMQTTNameMapper
 from .mqtt_tracker import ReefPiMQTTTracker
 from .const import (
     _LOGGER,
@@ -97,6 +98,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug(
             "Using host %s for %s", config_entry.data[HOST], config_entry.title
         )
+        self.entry = config_entry
         self.default_name = config_entry.title
         self.username = config_entry.data[USER]
         self.password = config_entry.data[PASSWORD]
@@ -141,14 +143,14 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         self.timers = {}
         self.display = {}
 
-        self.tcs_name_to_id = {}
-        self.equipment_name_to_id = {}
-        self.ph_name_to_id = {}
-        self.inlet_name_to_id = {}
-        self.light_name_to_id = {}
-
         self.mqtt_prefix = config_entry.data.get("mqtt_prefix", "reef-pi")
         self.mqtt_enabled = config_entry.options.get(MQTT_ENABLED) or False
+
+        # MQTT topic-to-device mapper with collision detection
+        self.mqtt_name_mapper = ReefPiMQTTNameMapper(
+            hass, config_entry, self.mqtt_prefix
+        )
+
         self.mqtt_handler = None
         self.mqtt_tracker = ReefPiMQTTTracker() if self.mqtt_enabled else None
 
@@ -222,7 +224,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     ):
                         if sensor_id in self.tcs:
                             all_tcs[sensor_id] = self.tcs[sensor_id]
-                        self.tcs_name_to_id[sensor["name"].lower()] = sensor_id
+                        self.mqtt_name_mapper.add_temperature(sensor["name"], sensor_id)
                         continue
 
                     all_tcs[sensor_id] = {
@@ -233,7 +235,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         ],
                         "attributes": sensor,
                     }
-                    self.tcs_name_to_id[sensor["name"].lower()] = sensor_id
+                    self.mqtt_name_mapper.add_temperature(sensor["name"], sensor_id)
 
                     if self.mqtt_tracker:
                         self.mqtt_tracker.record_polling_update(
@@ -249,23 +251,18 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             if equipment:
                 _LOGGER.debug("equipment updated: %s", json.dumps(equipment))
                 all_equipment = {}
+                # Note: Equipment polling cannot be optimized per-device because
+                # /api/equipment returns all equipment states in a single API call.
+                # MQTT still provides real-time updates for equipment changes.
                 for device in equipment:
                     device_id = device["id"]
-
-                    if self.mqtt_tracker and self.mqtt_tracker.should_skip_polling(
-                        "equipment", device_id
-                    ):
-                        if device_id in self.equipment:
-                            all_equipment[device_id] = self.equipment[device_id]
-                        self.equipment_name_to_id[device["name"].lower()] = device_id
-                        continue
 
                     all_equipment[device_id] = {
                         "name": device["name"],
                         "state": device["on"],
                         "attributes": device,
                     }
-                    self.equipment_name_to_id[device["name"].lower()] = device_id
+                    self.mqtt_name_mapper.add_equipment(device["name"], device_id)
 
                     if self.mqtt_tracker:
                         self.mqtt_tracker.record_polling_update("equipment", device_id)
@@ -316,7 +313,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                     ):
                         if probe_id in self.ph:
                             all_ph[probe_id] = self.ph[probe_id]
-                        self.ph_name_to_id[probe["name"].lower()] = probe_id
+                        self.mqtt_name_mapper.add_ph(probe["name"], probe_id)
                         continue
 
                     attributes = probe
@@ -328,7 +325,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "value": value,
                         "attributes": attributes,
                     }
-                    self.ph_name_to_id[probe["name"].lower()] = probe_id
+                    self.mqtt_name_mapper.add_ph(probe["name"], probe_id)
 
                     if self.mqtt_tracker:
                         self.mqtt_tracker.record_polling_update("ph", probe_id)
@@ -360,7 +357,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                                 "state": state,
                                 "attributes": light["channels"][channel],
                             }
-                            self.light_name_to_id[combined_name.lower()] = id
+                            self.mqtt_name_mapper.add_light(combined_name, id)
 
                 self.lights = all_light
 
@@ -391,7 +388,7 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": inlet_value,
                         "attributes": inlet,
                     }
-                    self.inlet_name_to_id[inlet["name"].lower()] = inlet["id"]
+                    self.mqtt_name_mapper.add_inlet(inlet["name"], inlet["id"])
                 self.inlets = all_inlet
 
     async def update_pumps(self):
@@ -472,6 +469,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_display()
             await self.update_macros()
             await self.update_timers()
+
+            # Check for MQTT name collisions and notify if any
+            if self.mqtt_name_mapper:
+                self.mqtt_name_mapper.notify_collisions()
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
