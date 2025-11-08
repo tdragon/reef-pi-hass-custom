@@ -22,6 +22,7 @@ This custom integration provides a way to monitor sensors data and control equip
 This integration can be installed using HACS.
 To do it add custom *integration* repository using url: `https://github.com/tdragon/reef-pi-hass-custom/`.
 Then search for Reef Pi in the *Integrations* section.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tdragon&repository=reef-pi-hass-custom&category=Integration)
 
 ### Manual
 To install this integration manually you have to download the content of this repository to `config/custom_components/reef-pi-hass-custom` directory:
