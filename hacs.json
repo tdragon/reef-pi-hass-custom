@@ -1,10 +1,6 @@
 {
   "name": "Reef Pi integration for Home Assistant",
-  "render_readme": true,
-  "domains": ["reef_pi"],
-  "documentation": "https://github.com/tdragon/reef-pi-hass-custom",
-  "issue_tracker": "https://github.com/tdragon/reef-pi-hass-custom/issues",
   "zip_release": true,
   "filename": "reef_pi.zip",
-  "iot_class": ["Local Pull"]
+  "render_readme": true
 }
