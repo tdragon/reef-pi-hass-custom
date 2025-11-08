@@ -7,6 +7,9 @@
 ![GitHub All Releases](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/total)
 ![GitHub Latest Release](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/latest/total)
 
+<p align="center">
+  <img src="assets/icon.png" alt="Reef-Pi Integration Icon" width="256"/>
+</p>
 
 # Home Assistant Reef Pi Integration
 
