@@ -1,17 +1,16 @@
 [![Community Forum](https://img.shields.io/badge/Community-Forum-41BDF5.svg?style=popout)](https://community.home-assistant.io/t/reef-pi-home-assistant-integration/312945)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-
 [![GitHub release](https://img.shields.io/github/release/tdragon/reef-pi-hass-custom.svg)](https://github.com/tdragon/reef-pi-hass-custom/releases)
-[![pytest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml)
-[![hassfest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml)
 ![GitHub All Releases](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/total)
 ![GitHub Latest Release](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/latest/total)
+![Installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Installations&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.reef_pi.total)
+[![pytest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml)
+[![hassfest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml)
+[![HACS](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hacks.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hacks.yaml)
 
-<p align="center">
-  <img src="assets/icon.png" alt="Reef-Pi Integration Icon" width="256"/>
-</p>
 
-# Home Assistant Reef Pi Integration
+# Home Assistant Reef Pi Integration 
+![Logo](assets/icon.png) 
 
 This custom integration provides a way to monitor sensors data and control equipment connected to [Reef-Pi (An open source reef tank controller based on Raspberry Pi)](http://reef-pi.github.io/) ([GIT repository](https://github.com/reef-pi/reef-pi/releases)).
 
@@ -22,6 +21,7 @@ This custom integration provides a way to monitor sensors data and control equip
 This integration can be installed using HACS.
 To do it add custom *integration* repository using url: `https://github.com/tdragon/reef-pi-hass-custom/`.
 Then search for Reef Pi in the *Integrations* section.
+
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tdragon&repository=reef-pi-hass-custom&category=Integration)
 
 ### Manual
