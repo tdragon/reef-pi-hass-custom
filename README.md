@@ -11,9 +11,7 @@
 [![HACS](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hacks.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hacks.yaml)
 
 
-<p align="center">
-  <img src="assets/icon.png" alt="Reef-Pi Integration Icon" width="256"/>
-</p>
+![Logo](assets/icon.png)
 
 # Home Assistant Reef Pi Integration
 
