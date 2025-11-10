@@ -1,12 +1,15 @@
 [![Community Forum](https://img.shields.io/badge/Community-Forum-41BDF5.svg?style=popout)](https://community.home-assistant.io/t/reef-pi-home-assistant-integration/312945)
-![Installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Installations&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.reef_pi.total)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
 [![GitHub release](https://img.shields.io/github/release/tdragon/reef-pi-hass-custom.svg)](https://github.com/tdragon/reef-pi-hass-custom/releases)
-[![pytest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml)
-[![hassfest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml)
 ![GitHub All Releases](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/total)
 ![GitHub Latest Release](https://img.shields.io/github/downloads/tdragon/reef-pi-hass-custom/latest/total)
+![Installs](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=Installations&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.reef_pi.total)
+
+[![pytest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/pytest.yaml)
+[![hassfest](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hassfest.yaml)
+[![HACS](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hacks.yaml/badge.svg)](https://github.com/tdragon/reef-pi-hass-custom/actions/workflows/hacks.yaml)
+
 
 <p align="center">
   <img src="assets/icon.png" alt="Reef-Pi Integration Icon" width="256"/>
