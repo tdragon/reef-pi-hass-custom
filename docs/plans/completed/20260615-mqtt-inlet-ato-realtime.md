@@ -235,10 +235,10 @@
       sensor.py; no new errors/warnings introduced)
 
 ### Task 6: [Final] Update documentation
-- [ ] update `CLAUDE.md` MQTT section: ATO `_state` drives the inlet binary_sensor in real time;
+- [x] update `CLAUDE.md` MQTT section: ATO `_state` drives the inlet binary_sensor in real time;
       inlet polling decoupled from `has_ato`; standalone inlets remain poll-only (reef-pi limitation);
       add "MQTT Last Inlet Update" diagnostic sensor to the list
-- [ ] move this plan to `docs/plans/completed/`
+- [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion
 *Items requiring manual intervention or external systems — informational only*

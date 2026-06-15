@@ -158,6 +158,9 @@ Each platform file (sensor.py, switch.py, light.py, binary_sensor.py, button.py)
   - Equipment: `{prefix}/equipment_{name}_state` → state (0.0/1.0)
   - Temperature: `{prefix}/{name}_reading` → temperature value
   - pH: `{prefix}/{name}_reading` → pH value (4 decimal places)
+  - ATO/inlet: `{prefix}/ato_{name}_state` → inlet state (0.0/1.0). reef-pi publishes the
+    ATO's float-switch reading on every ATO check; the integration maps the ATO's state topic
+    to the ATO's inlet id, so this drives the corresponding inlet binary_sensor in real time.
 - Name-to-ID correlation: Uses device names from MQTT topics to look up device IDs (case-insensitive)
 - Real-time updates: MQTT messages trigger immediate entity state updates via coordinator
 
@@ -175,6 +178,15 @@ Each platform file (sensor.py, switch.py, light.py, binary_sensor.py, button.py)
 - MQTT messages update coordinator data, which propagates to entities
 - **Polling optimization**: Devices with recent MQTT updates (< 2 min) skip API polling
 - Diagnostic sensors show MQTT connection status, message counts, and last update times
+
+**Inlet / ATO real-time updates**:
+- Inlet polling is decoupled from the ATO capability: inlets poll regardless of `has_ato`
+  (reef-pi always exposes `/api/inlets`).
+- An inlet tied to an ATO updates in real time via MQTT: the integration registers the ATO's
+  `ato_{name}_state` topic against the ATO's inlet id, so the float-switch reading flips the
+  inlet binary_sensor immediately (no waiting for the poll interval).
+- Standalone inlets NOT tied to an ATO have no MQTT signal — reef-pi publishes no telemetry
+  for them, so they remain poll-only. This is a reef-pi limitation.
 
 ## Configuration
 
@@ -216,6 +228,7 @@ When MQTT is enabled, the integration creates diagnostic sensors (visible in dev
 - **MQTT Last Temperature Update** - Timestamp of last temperature MQTT message
 - **MQTT Last Equipment Update** - Timestamp of last equipment MQTT message
 - **MQTT Last pH Update** - Timestamp of last pH MQTT message
+- **MQTT Last Inlet Update** - Timestamp of last inlet (ATO state) MQTT message
 
 These sensors help monitor MQTT connectivity and troubleshoot issues.
 
