@@ -209,15 +209,36 @@ class ReefPiMQTTNameMapper:
         self._building_collisions = {}
 
     def commit_refresh(self) -> None:
-        """Atomically promote the staging buffer to the live maps after a good refresh.
+        """Merge the staging buffer into the live maps after a good refresh.
 
-        The swap is a single synchronous assignment on the event loop, so the MQTT
+        Merge (not replace) so a subsystem whose endpoint soft-failed this cycle
+        (returned an empty {}/[] without raising, e.g. the known-flaky pH endpoint)
+        keeps its previously committed topics instead of losing real-time MQTT updates
+        until the next fully-successful poll. Staging is still rebuilt fresh each cycle,
+        so a changed registration (e.g. an ATO repointed to a new inlet) overwrites the
+        live entry without a false self-collision.
+
+        Note: a device genuinely deleted in reef-pi leaves a stale topic mapping until
+        reload. This is harmless: the MQTT handler guards every branch on the device id
+        existing in the coordinator's dicts and no-ops for unknown ids.
+
+        Mutations are single synchronous statements on the event loop, so the MQTT
         callback (which reads topic_to_device) never observes a torn state.
         """
         if self._building is None:
             return
-        self.topic_to_device = self._building
-        self._collisions = self._building_collisions
+
+        # Successful (re)registrations overwrite the live entry and clear any prior
+        # collision on that exact topic.
+        for topic, device in self._building.items():
+            self.topic_to_device[topic] = device
+            self._collisions.pop(topic, None)
+
+        # Genuine same-cycle collisions disable the topic for real-time updates.
+        for topic, devices in self._building_collisions.items():
+            self._collisions[topic] = devices
+            self.topic_to_device.pop(topic, None)
+
         self._building = None
         self._building_collisions = {}
 

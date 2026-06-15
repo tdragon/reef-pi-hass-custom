@@ -718,6 +718,38 @@ async def test_async_update_data_preserves_mappings_on_transient_failure(hass):
         )
 
 
+async def test_async_update_data_retains_soft_failed_subsystem_topics(hass):
+    """A subsystem endpoint soft-failing ({}/[] without raising) keeps its topics.
+
+    Reproduces the codex iteration-3 finding: a REST endpoint returning an empty body
+    (no exception) skips that subsystem's add_* calls for the cycle. A REPLACE-on-commit
+    would drop those topics from the live map and silently disable MQTT updates for the
+    still-existing entities. With MERGE-on-commit the previously committed topics are
+    retained (pH is a known-flaky endpoint in this project).
+    """
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_all(mock, has_inlets=True)
+        coordinator = await _build_coordinator(hass)
+
+        # Cycle 1 succeeds: pH probe (id "6") gets registered and committed.
+        await coordinator._async_update_data()
+        ph_topic = "reef-pi/ph_ph"
+        assert coordinator.mqtt_name_mapper.topic_to_device[ph_topic] == ("ph", "6")
+
+        # Cycle 2: /api/phprobes now soft-fails with an empty list (no exception). The
+        # other subsystems still succeed, so commit_refresh is reached.
+        mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/phprobes").respond(200, json=[])
+
+        await coordinator._async_update_data()
+
+        # pH topic is retained from the previous good cycle (not dropped by the merge).
+        assert coordinator.mqtt_name_mapper.topic_to_device[ph_topic] == ("ph", "6")
+        # A subsystem that did refresh this cycle is still present too.
+        assert (
+            "reef-pi/ato_test_ato_state" in coordinator.mqtt_name_mapper.topic_to_device
+        )
+
+
 async def test_notify_collisions_rewrites_when_devices_change(hass):
     """A stable topic whose colliding devices change re-creates the notification."""
     hass_mock = MagicMock()
