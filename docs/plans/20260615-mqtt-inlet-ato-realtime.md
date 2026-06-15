@@ -168,23 +168,23 @@
 - Modify: `custom_components/reef_pi/__init__.py`
 - Modify: `tests/test_mqtt_name_mapper.py`
 
-- [ ] extend `_add_device` with optional `topic_type=None`; generate topic via
+- [x] extend `_add_device` with optional `topic_type=None`; generate topic via
       `self._generate_topic(topic_type or device_type, name)`
-- [ ] add `add_ato_state(self, ato_name, inlet_id)` →
+- [x] add `add_ato_state(self, ato_name, inlet_id)` →
       `self._add_device("inlet", ato_name, inlet_id, topic_type="ato")`
-- [ ] remove `add_inlet` and `add_ato` methods (dead after this change); keep the `"ato"` case in
+- [x] remove `add_inlet` and `add_ato` methods (dead after this change); keep the `"ato"` case in
       `_generate_topic` and the `"inlet"` label in `notify_collisions`
-- [ ] in `__init__.py update_atos`, register `add_ato_state(atos[id]["name"], inlet_id)` only when
+- [x] in `__init__.py update_atos`, register `add_ato_state(atos[id]["name"], inlet_id)` only when
       `inlet_id = atos[id].get("inlet")` is truthy (skips macro-based ATOs with empty `inlet`)
-- [ ] in `__init__.py update_inlets`, remove the `self.mqtt_name_mapper.add_inlet(...)` call
-- [ ] write test: `add_ato_state("Test ATO", "2")` registers `reef-pi/ato_test_ato_state → ("inlet", "2")`
-- [ ] write test: name normalization (e.g. `"My-ATO"`) produces the expected topic
-- [ ] write test: two ATOs sharing one inlet (different names) both map to `("inlet", id)` without a
+- [x] in `__init__.py update_inlets`, remove the `self.mqtt_name_mapper.add_inlet(...)` call
+- [x] write test: `add_ato_state("Test ATO", "2")` registers `reef-pi/ato_test_ato_state → ("inlet", "2")`
+- [x] write test: name normalization (e.g. `"My-ATO"`) produces the expected topic
+- [x] write test: two ATOs sharing one inlet (different names) both map to `("inlet", id)` without a
       collision; re-registration is idempotent
-- [ ] write test: two ATOs with the **same** normalized name but different inlets trigger collision
+- [x] write test: two ATOs with the **same** normalized name but different inlets trigger collision
       detection (topic disabled) — proves collision detection still fires through the `topic_type` path
-- [ ] write test: `update_atos` does not call `add_ato_state` for a macro-based ATO with empty `inlet`
-- [ ] run tests — must pass before Task 3
+- [x] write test: `update_atos` does not call `add_ato_state` for a macro-based ATO with empty `inlet`
+- [x] run tests — must pass before Task 3
 
 ### Task 3: Decouple inlet polling from `has_ato`
 

@@ -3,8 +3,14 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+import respx
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.reef_pi import DOMAIN, ReefPiDataUpdateCoordinator
 from custom_components.reef_pi.mqtt_name_mapper import ReefPiMQTTNameMapper
+
+from . import async_api_mock
 
 
 @pytest.mark.asyncio
@@ -353,6 +359,150 @@ async def test_notify_collisions_resets_after_clear():
         mapper.add_temperature("Sump", "4")
         mapper.notify_collisions()
         assert mock_notif.async_create.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_add_ato_state_maps_to_inlet():
+    """Test ATO state topic is registered against the inlet id."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.add_ato_state("Test ATO", "2")
+
+    # Topic is generated from the ATO name, but device is stored as the inlet
+    assert mapper.topic_to_device["reef-pi/ato_test_ato_state"] == ("inlet", "2")
+    # Topic must match what the handler computes via _generate_topic("ato", ...)
+    assert mapper._generate_topic("ato", "Test ATO") == "reef-pi/ato_test_ato_state"
+    assert not mapper.has_collisions()
+
+
+@pytest.mark.asyncio
+async def test_add_ato_state_name_normalization():
+    """Test ATO state topic uses normalized name."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.add_ato_state("My-ATO", "5")
+
+    assert mapper.topic_to_device["reef-pi/ato_my_ato_state"] == ("inlet", "5")
+    assert not mapper.has_collisions()
+
+
+@pytest.mark.asyncio
+async def test_add_ato_state_shared_inlet_no_collision():
+    """Test two ATOs (different names) sharing one inlet do not collide."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.add_ato_state("ATO One", "2")
+    mapper.add_ato_state("ATO Two", "2")
+
+    # Different ATO names produce different topics, both pointing at the inlet
+    assert mapper.topic_to_device["reef-pi/ato_ato_one_state"] == ("inlet", "2")
+    assert mapper.topic_to_device["reef-pi/ato_ato_two_state"] == ("inlet", "2")
+    assert not mapper.has_collisions()
+
+
+@pytest.mark.asyncio
+async def test_add_ato_state_idempotent():
+    """Test re-registering the same ATO state mapping is idempotent."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.add_ato_state("Test ATO", "2")
+    mapper.add_ato_state("Test ATO", "2")
+
+    assert mapper.topic_to_device["reef-pi/ato_test_ato_state"] == ("inlet", "2")
+    assert not mapper.has_collisions()
+
+
+@pytest.mark.asyncio
+async def test_add_ato_state_same_name_collision():
+    """Test two ATOs with the same name but different inlets collide."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.add_ato_state("Test ATO", "2")
+    mapper.add_ato_state("Test ATO", "3")  # Same topic, different inlet
+
+    # Collision detection fires through the topic_type path - topic disabled
+    assert "reef-pi/ato_test_ato_state" not in mapper.topic_to_device
+    assert mapper.has_collisions()
+    assert mapper._collisions["reef-pi/ato_test_ato_state"] == [
+        ("inlet", "2"),
+        ("inlet", "3"),
+    ]
+
+
+async def _build_coordinator(hass):
+    """Build an authenticated coordinator wired for update_atos tests."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Reef Pi",
+        data={
+            "host": async_api_mock.REEF_MOCK_URL,
+            "username": async_api_mock.REEF_MOCK_USER,
+            "password": async_api_mock.REEF_MOCK_PASSWORD,
+            "verify": False,
+        },
+    )
+    entry.add_to_hass(hass)
+    coordinator = ReefPiDataUpdateCoordinator(
+        hass, async_get_clientsession(hass), entry
+    )
+    await coordinator.api.authenticate(
+        async_api_mock.REEF_MOCK_USER, async_api_mock.REEF_MOCK_PASSWORD
+    )
+    coordinator.has_ato = True
+    return coordinator
+
+
+async def test_update_atos_registers_ato_state(hass):
+    """Test update_atos registers the ATO state topic against its inlet id."""
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_signin(mock)
+        async_api_mock.mock_atos(mock)
+        coordinator = await _build_coordinator(hass)
+
+        await coordinator.update_atos()
+
+        assert coordinator.mqtt_name_mapper.topic_to_device[
+            "reef-pi/ato_test_ato_state"
+        ] == ("inlet", "2")
+
+
+async def test_update_atos_skips_macro_ato(hass):
+    """Test update_atos does not register a macro-based ATO with empty inlet."""
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_signin(mock)
+        mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/atos").respond(
+            200,
+            json=[{"id": "1", "name": "Macro ATO", "inlet": "", "is_macro": True}],
+        )
+        mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/atos/1/usage").respond(
+            200, json={}
+        )
+        coordinator = await _build_coordinator(hass)
+
+        await coordinator.update_atos()
+
+        assert coordinator.mqtt_name_mapper.topic_to_device == {}
+        assert not coordinator.mqtt_name_mapper.has_collisions()
 
 
 @pytest.mark.asyncio

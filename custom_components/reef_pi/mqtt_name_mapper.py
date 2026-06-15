@@ -100,27 +100,41 @@ class ReefPiMQTTNameMapper:
         """Add equipment to topic mapping."""
         self._add_device("equipment", name, device_id)
 
-    def add_inlet(self, name: str, device_id: str) -> None:
-        """Add inlet to topic mapping."""
-        self._add_device("inlet", name, device_id)
-
     def add_light(self, name: str, device_id: str) -> None:
         """Add light to topic mapping."""
         self._add_device("light", name, device_id)
 
-    def add_ato(self, name: str, device_id: str) -> None:
-        """Add ATO to topic mapping."""
-        self._add_device("ato", name, device_id)
+    def add_ato_state(self, ato_name: str, inlet_id: str) -> None:
+        """Map an ATO's state topic to its inlet device.
 
-    def _add_device(self, device_type: str, name: str, device_id: str) -> None:
+        reef-pi publishes the float-switch reading on the ATO's ``_state`` topic,
+        so the topic is generated from the ATO name but stored against the inlet id
+        (the device the inlet binary_sensor reads).
+
+        Args:
+            ato_name: ATO name from reef-pi (used to build the ``ato_<name>_state`` topic)
+            inlet_id: Inlet device ID referenced by the ATO's ``inlet`` field
+        """
+        self._add_device("inlet", ato_name, inlet_id, topic_type="ato")
+
+    def _add_device(
+        self,
+        device_type: str,
+        name: str,
+        device_id: str,
+        topic_type: str | None = None,
+    ) -> None:
         """Add device to topic mapping, track collisions.
 
         Args:
-            device_type: Type of device (temperature, ph, equipment, inlet, light, ato)
+            device_type: Type of device the message updates (temperature, ph, equipment,
+                inlet, light)
             name: Device name from reef-pi
             device_id: Device ID
+            topic_type: Topic pattern to use when it differs from device_type
+                (e.g. ATO state topics map to inlet devices)
         """
-        topic = self._generate_topic(device_type, name)
+        topic = self._generate_topic(topic_type or device_type, name)
         device = (device_type, device_id)
 
         # Check if topic already registered

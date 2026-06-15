@@ -389,7 +389,6 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                         "state": inlet_value,
                         "attributes": inlet,
                     }
-                    self.mqtt_name_mapper.add_inlet(inlet["name"], inlet["id"])
                 self.inlets = all_inlet
 
     async def update_pumps(self):
@@ -432,6 +431,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             atos = {a["id"]: a for a in atos}
             ato_states = {}
             for id in atos.keys():
+                inlet_id = atos[id].get("inlet")
+                if inlet_id:
+                    self.mqtt_name_mapper.add_ato_state(atos[id]["name"], inlet_id)
                 ato_states[id] = {
                     "ts": datetime.fromtimestamp(0, tz=dt_util.UTC),
                     "pump": 0,
