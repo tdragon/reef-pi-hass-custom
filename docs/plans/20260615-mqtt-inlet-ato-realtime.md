@@ -193,17 +193,17 @@
 - Modify: `tests/async_api_mock.py`
 - Modify: `tests/test_sensors.py`
 
-- [ ] change `update_inlets` so it no longer requires `self.has_ato` (poll `/api/inlets`
+- [x] change `update_inlets` so it no longer requires `self.has_ato` (poll `/api/inlets`
       unconditionally; keep the existing `if inlets:` guard for empty results)
-- [ ] verify `binary_sensor.async_setup_entry` still builds entities from `coordinator.inlets`
-- [ ] in `tests/async_api_mock.py`, add a non-empty `/api/inlets` payload (list incl. inlet id `"2"`)
+- [x] verify `binary_sensor.async_setup_entry` still builds entities from `coordinator.inlets`
+- [x] in `tests/async_api_mock.py`, add a non-empty `/api/inlets` payload (list incl. inlet id `"2"`)
       + matching `/api/inlets/{id}/read` (int `1`); current `mock_all` returns `{}` so the loop is
       never exercised. Add an `ato`-absent capabilities variant (current `mock_capabilities` always
       sets `ato: True`)
-- [ ] write test: with capabilities where `ato` is absent but `/api/inlets` returns inlets,
+- [x] write test: with capabilities where `ato` is absent but `/api/inlets` returns inlets,
       `coordinator.inlets` is populated (and the inlet binary_sensor entity is created)
-- [ ] write/adjust test: existing inlet polling behavior still holds when `ato` is present
-- [ ] run tests — must pass before Task 4
+- [x] write/adjust test: existing inlet polling behavior still holds when `ato` is present
+- [x] run tests — must pass before Task 4
 
 ### Task 4: Add the inlet MQTT diagnostic sensor
 

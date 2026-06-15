@@ -370,26 +370,25 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 self.display = state
 
     async def update_inlets(self):
-        if self.has_ato:
-            _LOGGER.debug("Fetching inlets")
-            inlets = await self.api.inlets()
-            if inlets:
-                _LOGGER.debug("inlets updated: %s", json.dumps(inlets))
-                all_inlet = {}
-                for inlet in inlets:
-                    inlet_raw_value = await self.api.inlet(inlet["id"])
+        _LOGGER.debug("Fetching inlets")
+        inlets = await self.api.inlets()
+        if inlets:
+            _LOGGER.debug("inlets updated: %s", json.dumps(inlets))
+            all_inlet = {}
+            for inlet in inlets:
+                inlet_raw_value = await self.api.inlet(inlet["id"])
 
-                    if inlet_raw_value == 1:
-                        inlet_value = True
-                    else:
-                        inlet_value = False
+                if inlet_raw_value == 1:
+                    inlet_value = True
+                else:
+                    inlet_value = False
 
-                    all_inlet[inlet["id"]] = {
-                        "name": inlet["name"],
-                        "state": inlet_value,
-                        "attributes": inlet,
-                    }
-                self.inlets = all_inlet
+                all_inlet[inlet["id"]] = {
+                    "name": inlet["name"],
+                    "state": inlet_value,
+                    "attributes": inlet,
+                }
+            self.inlets = all_inlet
 
     async def update_pumps(self):
         if self.has_pumps:

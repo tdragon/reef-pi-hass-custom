@@ -12,26 +12,44 @@ def mock_signin(mock, url=REEF_MOCK_URL):
     mock.post(f"{url}/auth/signin").respond(200, headers={"set-cookie": "auth=token"})
 
 
-def mock_capabilities(mock, ph=True, url=REEF_MOCK_URL):
+def mock_capabilities(mock, ph=True, ato=True, url=REEF_MOCK_URL):
+    capabilities = {
+        "dev_mode": False,
+        "dashboard": False,
+        "health_check": False,
+        "equipment": True,
+        "timers": False,
+        "lighting": True,
+        "temperature": True,
+        "camera": False,
+        "doser": True,
+        "ph": ph,
+        "macro": False,
+        "configuration": False,
+        "journal": False,
+    }
+    if ato:
+        capabilities["ato"] = True
     mock.get(f"{url}/api/capabilities", cookies={"auth": "token"}).respond(
         200,
-        json={
-            "dev_mode": False,
-            "dashboard": False,
-            "health_check": False,
-            "equipment": True,
-            "timers": False,
-            "lighting": True,
-            "temperature": True,
-            "ato": True,
-            "camera": False,
-            "doser": True,
-            "ph": ph,
-            "macro": False,
-            "configuration": False,
-            "journal": False,
-        },
+        json=capabilities,
     )
+
+
+def mock_inlets(mock, url=REEF_MOCK_URL):
+    mock.get(f"{url}/api/inlets").respond(
+        200,
+        json=[
+            {
+                "id": "2",
+                "name": "Float Switch",
+                "pin": 17,
+                "driver": "rpi",
+                "reverse": False,
+            }
+        ],
+    )
+    mock.post(f"{url}/api/inlets/2/read").respond(200, json=1)
 
 
 def mock_phprobes(mock, url=REEF_MOCK_URL):
@@ -169,14 +187,22 @@ def mock_lights(mock, url=REEF_MOCK_URL):
     )
 
 
-def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
+def mock_all(
+    mock,
+    url=REEF_MOCK_URL,
+    has_ph=True,
+    has_ato_usage=True,
+    has_ato=True,
+    has_inlets=False,
+):
     mock_signin(mock)
-    mock_capabilities(mock)
+    mock_capabilities(mock, ato=has_ato)
     mock_info(mock)
     mock_telemetry(mock)
     mock_phprobes(mock)
     mock_ph6(mock)
-    mock_atos(mock, empty_usage=not has_ato_usage)
+    if has_ato:
+        mock_atos(mock, empty_usage=not has_ato_usage)
     mock_lights(mock)
 
     mock.get(f"{url}/api/doser/pumps").respond(
@@ -419,7 +445,10 @@ def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
         200, json={"temperature": "25.0"}
     )
 
-    mock.get(f"{url}/api/inlets").respond(200, json={})
+    if has_inlets:
+        mock_inlets(mock, url=url)
+    else:
+        mock.get(f"{url}/api/inlets").respond(200, json={})
 
 
 def mock_all_mqtt_enabled(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):

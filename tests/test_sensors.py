@@ -124,3 +124,58 @@ async def test_ato_empty(hass):
         assert state
         assert state.state == "unavailable"
         assert state.name == "Reef PI Test ATO Duration"
+
+
+async def test_inlet_polled_with_ato(hass):
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_all(mock, has_inlets=True)
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "host": async_api_mock.REEF_MOCK_URL,
+                "username": async_api_mock.REEF_MOCK_USER,
+                "password": async_api_mock.REEF_MOCK_PASSWORD,
+                "verify": False,
+            },
+        )
+
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+        assert "2" in coordinator.inlets
+        assert coordinator.inlets["2"]["state"] is True
+
+        state = hass.states.get("binary_sensor.reef_pi_float_switch")
+        assert state
+        assert state.state == "on"
+        assert state.name == "Reef PI Float Switch"
+
+
+async def test_inlet_polled_without_ato(hass):
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_all(mock, has_ato=False, has_inlets=True)
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "host": async_api_mock.REEF_MOCK_URL,
+                "username": async_api_mock.REEF_MOCK_USER,
+                "password": async_api_mock.REEF_MOCK_PASSWORD,
+                "verify": False,
+            },
+        )
+
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+        assert coordinator.has_ato is False
+        assert "2" in coordinator.inlets
+        assert coordinator.inlets["2"]["state"] is True
+
+        state = hass.states.get("binary_sensor.reef_pi_float_switch")
+        assert state
+        assert state.state == "on"
+        assert state.name == "Reef PI Float Switch"
