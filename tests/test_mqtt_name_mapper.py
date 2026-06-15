@@ -505,6 +505,25 @@ async def test_update_atos_skips_macro_ato(hass):
         assert not coordinator.mqtt_name_mapper.has_collisions()
 
 
+async def test_update_atos_skips_ato_without_inlet_key(hass):
+    """Test update_atos handles an ATO with no inlet key at all."""
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_signin(mock)
+        mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/atos").respond(
+            200,
+            json=[{"id": "1", "name": "Keyless ATO", "is_macro": True}],
+        )
+        mock.get(f"{async_api_mock.REEF_MOCK_URL}/api/atos/1/usage").respond(
+            200, json={}
+        )
+        coordinator = await _build_coordinator(hass)
+
+        await coordinator.update_atos()
+
+        assert coordinator.mqtt_name_mapper.topic_to_device == {}
+        assert not coordinator.mqtt_name_mapper.has_collisions()
+
+
 @pytest.mark.asyncio
 async def test_custom_mqtt_prefix():
     """Test mapper with custom MQTT prefix."""

@@ -57,7 +57,7 @@ Additional entities include:
 The integration supports **optional MQTT** for real-time updates, significantly reducing API polling and providing instant state changes.
 
 ### Features
-- **Real-time updates** for temperature, pH, and equipment state changes
+- **Real-time updates** for temperature, pH, equipment, and inlet/ATO (float-switch) state changes (standalone inlets not tied to an ATO remain poll-only, as reef-pi publishes no telemetry for them)
 - **Intelligent polling optimization** - skips API calls for devices with recent MQTT updates
 - **Automatic discovery** - MQTT configuration detected from reef-pi automatically
 - **Diagnostic sensors** - monitor MQTT connection status, message counts, and last update times
@@ -93,6 +93,7 @@ When MQTT is enabled, the following diagnostic sensors are created:
 - **MQTT Last Temperature Update** - Timestamp of last temperature MQTT message
 - **MQTT Last Equipment Update** - Timestamp of last equipment MQTT message
 - **MQTT Last pH Update** - Timestamp of last pH MQTT message
+- **MQTT Last Inlet Update** - Timestamp of last inlet (ATO float-switch) MQTT message
 
 These sensors are visible in the device diagnostics view.
 

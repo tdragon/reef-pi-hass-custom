@@ -210,7 +210,6 @@ class ReefPiMQTTNameMapper:
             "equipment": "Equipment",
             "inlet": "Inlet",
             "light": "Light",
-            "ato": "ATO",
         }
 
         for topic, devices in self._collisions.items():
