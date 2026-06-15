@@ -51,6 +51,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             ReefPiMQTTLastUpdateSensor(coordinator, "temperature"),
             ReefPiMQTTLastUpdateSensor(coordinator, "equipment"),
             ReefPiMQTTLastUpdateSensor(coordinator, "ph"),
+            ReefPiMQTTLastUpdateSensor(coordinator, "inlet"),
         ]
         async_add_entities(diagnostic_sensors)
 

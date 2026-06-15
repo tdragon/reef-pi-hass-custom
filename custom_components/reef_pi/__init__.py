@@ -370,27 +370,25 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 self.display = state
 
     async def update_inlets(self):
-        if self.has_ato:
-            _LOGGER.debug("Fetching inlets")
-            inlets = await self.api.inlets()
-            if inlets:
-                _LOGGER.debug("inlets updated: %s", json.dumps(inlets))
-                all_inlet = {}
-                for inlet in inlets:
-                    inlet_raw_value = await self.api.inlet(inlet["id"])
+        _LOGGER.debug("Fetching inlets")
+        inlets = await self.api.inlets()
+        if inlets:
+            _LOGGER.debug("inlets updated: %s", json.dumps(inlets))
+            all_inlet = {}
+            for inlet in inlets:
+                inlet_raw_value = await self.api.inlet(inlet["id"])
 
-                    if inlet_raw_value == 1:
-                        inlet_value = True
-                    else:
-                        inlet_value = False
+                if inlet_raw_value == 1:
+                    inlet_value = True
+                else:
+                    inlet_value = False
 
-                    all_inlet[inlet["id"]] = {
-                        "name": inlet["name"],
-                        "state": inlet_value,
-                        "attributes": inlet,
-                    }
-                    self.mqtt_name_mapper.add_inlet(inlet["name"], inlet["id"])
-                self.inlets = all_inlet
+                all_inlet[inlet["id"]] = {
+                    "name": inlet["name"],
+                    "state": inlet_value,
+                    "attributes": inlet,
+                }
+            self.inlets = all_inlet
 
     async def update_pumps(self):
         if self.has_pumps:
@@ -432,6 +430,9 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             atos = {a["id"]: a for a in atos}
             ato_states = {}
             for id in atos.keys():
+                inlet_id = atos[id].get("inlet")
+                if inlet_id:
+                    self.mqtt_name_mapper.add_ato_state(atos[id]["name"], inlet_id)
                 ato_states[id] = {
                     "ts": datetime.fromtimestamp(0, tz=dt_util.UTC),
                     "pump": 0,
@@ -461,6 +462,13 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 await self.api.authenticate(self.username, self.password)
                 _LOGGER.debug("Authenticated")
 
+            # Rebuild topic mappings into a staging buffer each cycle so a changed
+            # registration (e.g. an ATO repointed to a different inlet) replaces the old
+            # one instead of colliding with a now-stale copy. The live maps are only
+            # swapped on commit_refresh() after a successful refresh, so a transient API
+            # failure mid-cycle keeps the last known-good mappings.
+            self.mqtt_name_mapper.begin_refresh()
+
             await self.update_capabilities()
             await self.update_info()
             await self.update_temperature()
@@ -474,9 +482,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_macros()
             await self.update_timers()
 
-            # Check for MQTT name collisions and notify if any
-            if self.mqtt_name_mapper:
-                self.mqtt_name_mapper.notify_collisions()
+            # All updates succeeded - commit the staged mappings atomically, then
+            # check for MQTT name collisions and notify if any.
+            self.mqtt_name_mapper.commit_refresh()
+            self.mqtt_name_mapper.notify_collisions()
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
