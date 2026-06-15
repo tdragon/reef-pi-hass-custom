@@ -1,25 +1,24 @@
 [project]
 name = "reef-pi-hass-custom"
-version = "0.4.4"
+version = "0.4.5"
 description = "HomeAssistant Reef PI Integration"
 dependencies = [ "httpx>=0.28.1",]
 requires-python = ">=3.13.2"
 readme = "README.md"
-
 [[project.authors]]
 name = "tdragon"
 email = "tdragn@gmail.com"
 
-[project.license]
-text = "MIT"
-
 [dependency-groups]
 dev = [ "pytest>=8.1.1", "pytest-homeassistant-custom-component>=0.13.193", "pytest-asyncio>=0.23.6", "ruff>=0.15.10", "pre-commit>=3.7.0", "pyright>=1.1.0",]
+
+[project.license]
+text = "MIT"
 
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "standard"
-reportIncompatibleVariableOverride = false  # Home Assistant uses cached_property, we use property - both work fine
-reportAttributeAccessIssue = "warning"  # Warn but don't fail on attribute access issues
-exclude = ["output"]
+reportIncompatibleVariableOverride = false
+reportAttributeAccessIssue = "warning"
+exclude = [ "output",]
