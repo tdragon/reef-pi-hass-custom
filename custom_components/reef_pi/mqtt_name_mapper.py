@@ -224,6 +224,14 @@ class ReefPiMQTTNameMapper:
 
         Mutations are single synchronous statements on the event loop, so the MQTT
         callback (which reads topic_to_device) never observes a torn state.
+
+        Collision detection is best-effort and EVENTUALLY-CONSISTENT across refreshes:
+        it is computed only over each cycle's staged registrations, not against topics
+        retained-live from a prior cycle (whose registrants are not re-staged this cycle).
+        So if a colliding subsystem soft-fails ({}/[] without raising), the collision
+        warning may be transiently stale - a known collision can clear or a new one be
+        missed for that cycle. It is re-evaluated and self-heals on the next refresh
+        where all colliding subsystems succeed and stage the same topic together.
         """
         if self._building is None:
             return

@@ -420,6 +420,55 @@ async def test_same_cycle_collision_still_detected_after_refresh():
 
 
 @pytest.mark.asyncio
+async def test_collision_detection_is_eventually_consistent_across_refreshes():
+    """Collision detection is best-effort and eventually-consistent (accepted limitation).
+
+    Collisions are computed only over each cycle's staged registrations. When a colliding
+    subsystem soft-fails (its REST endpoint returns {}/[] without raising) so only one side
+    is re-staged, the previously-detected collision is transiently cleared for that cycle.
+    It is re-detected and self-heals on the next refresh where both colliding subsystems
+    succeed and stage the same topic together. This documents that accepted transient
+    staleness; it only affects the best-effort warning, never normal device state updates.
+    """
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    topic = "reef-pi/ph_reading"
+
+    # Cycle 1: two different device types normalize to the same topic -> collision.
+    mapper.begin_refresh()
+    mapper.add_temperature("ph", "temp1")  # -> reef-pi/ph_reading
+    mapper.add_ph("reading", "ph1")  # -> reef-pi/ph_reading
+    mapper.commit_refresh()
+
+    assert topic not in mapper.topic_to_device
+    assert mapper.has_collisions()
+    assert mapper._collisions[topic] == [("temperature", "temp1"), ("ph", "ph1")]
+
+    # Cycle 2: the colliding pH side soft-fails, so only the temperature side re-stages.
+    # The collision is transiently cleared and the topic maps to the surviving device.
+    mapper.begin_refresh()
+    mapper.add_temperature("ph", "temp1")
+    mapper.commit_refresh()
+
+    assert mapper.topic_to_device[topic] == ("temperature", "temp1")
+    assert not mapper.has_collisions()
+
+    # Cycle 3: both subsystems succeed again -> collision is re-detected (self-healing).
+    mapper.begin_refresh()
+    mapper.add_temperature("ph", "temp1")
+    mapper.add_ph("reading", "ph1")
+    mapper.commit_refresh()
+
+    assert topic not in mapper.topic_to_device
+    assert mapper.has_collisions()
+    assert mapper._collisions[topic] == [("temperature", "temp1"), ("ph", "ph1")]
+
+
+@pytest.mark.asyncio
 async def test_persistent_collision_not_renotified_across_refreshes():
     """A persisting collision notifies once, not on every poll cycle."""
     hass = MagicMock()
