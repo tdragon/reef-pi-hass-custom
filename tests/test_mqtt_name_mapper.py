@@ -335,6 +335,143 @@ async def test_notify_collisions_only_once():
 
 
 @pytest.mark.asyncio
+async def test_begin_refresh_clears_topics_keeps_notified_state():
+    """Test begin_refresh resets topics/collisions but keeps the notified set."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.add_temperature("Tank", "1")
+    mapper.add_temperature("Tank", "2")  # Collision
+    with patch("custom_components.reef_pi.mqtt_name_mapper.persistent_notification"):
+        mapper.notify_collisions()
+
+    assert mapper.has_collisions()
+    assert mapper._notified_topics == {"reef-pi/tank_reading"}
+
+    mapper.begin_refresh()
+
+    # Topics and collisions are cleared, but the notified set is preserved
+    assert mapper.topic_to_device == {}
+    assert not mapper.has_collisions()
+    assert mapper._notified_topics == {"reef-pi/tank_reading"}
+
+
+@pytest.mark.asyncio
+async def test_ato_repoint_across_refresh_no_false_collision():
+    """An ATO repointed to a new inlet keeps real-time updates (no stale collision).
+
+    Reproduces the codex finding: without a per-refresh rebuild, re-registering the
+    unchanged ``ato_<name>_state`` topic with a new inlet id collides with the stale
+    copy and silently disables the mapping. begin_refresh fixes this.
+    """
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    # Refresh 1: ATO points at inlet "2"
+    mapper.begin_refresh()
+    mapper.add_ato_state("Test ATO", "2")
+    assert mapper.topic_to_device["reef-pi/ato_test_ato_state"] == ("inlet", "2")
+    assert not mapper.has_collisions()
+
+    # Refresh 2: ATO repointed to inlet "3" (same ATO name, same topic)
+    mapper.begin_refresh()
+    mapper.add_ato_state("Test ATO", "3")
+
+    # Topic now maps to the NEW inlet with no collision -> updates stay enabled
+    assert mapper.topic_to_device["reef-pi/ato_test_ato_state"] == ("inlet", "3")
+    assert not mapper.has_collisions()
+
+
+@pytest.mark.asyncio
+async def test_same_cycle_collision_still_detected_after_refresh():
+    """Two different devices sharing a topic in one cycle still collide."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    mapper.begin_refresh()
+    mapper.add_temperature("Tank", "1")
+    mapper.add_temperature("Tank", "2")  # Genuine same-cycle collision
+
+    assert "reef-pi/tank_reading" not in mapper.topic_to_device
+    assert mapper.has_collisions()
+    assert mapper._collisions["reef-pi/tank_reading"] == [
+        ("temperature", "1"),
+        ("temperature", "2"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_persistent_collision_not_renotified_across_refreshes():
+    """A persisting collision notifies once, not on every poll cycle."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    with patch(
+        "custom_components.reef_pi.mqtt_name_mapper.persistent_notification"
+    ) as mock_notif:
+        # Cycle 1: collision appears -> notify once
+        mapper.begin_refresh()
+        mapper.add_temperature("Tank", "1")
+        mapper.add_temperature("Tank", "2")
+        mapper.notify_collisions()
+
+        # Cycle 2: same collision persists -> no new notification
+        mapper.begin_refresh()
+        mapper.add_temperature("Tank", "1")
+        mapper.add_temperature("Tank", "2")
+        mapper.notify_collisions()
+
+        assert mock_notif.async_create.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_resolved_collision_dismisses_and_renotifies():
+    """A resolved collision dismisses; a later collision notifies again."""
+    hass = MagicMock()
+    entry = MagicMock()
+    entry.entry_id = "test_id"
+
+    mapper = ReefPiMQTTNameMapper(hass, entry, "reef-pi")
+
+    with patch(
+        "custom_components.reef_pi.mqtt_name_mapper.persistent_notification"
+    ) as mock_notif:
+        # Cycle 1: collision -> notify
+        mapper.begin_refresh()
+        mapper.add_temperature("Tank", "1")
+        mapper.add_temperature("Tank", "2")
+        mapper.notify_collisions()
+        assert mock_notif.async_create.call_count == 1
+
+        # Cycle 2: collision resolved -> dismiss
+        mapper.begin_refresh()
+        mapper.add_temperature("Tank", "1")
+        mapper.notify_collisions()
+        mock_notif.async_dismiss.assert_called_with(
+            hass, "reef_pi_mqtt_collisions_test_id"
+        )
+
+        # Cycle 3: collision returns -> notify again (state was reset on dismiss)
+        mapper.begin_refresh()
+        mapper.add_temperature("Tank", "1")
+        mapper.add_temperature("Tank", "2")
+        mapper.notify_collisions()
+        assert mock_notif.async_create.call_count == 2
+
+
+@pytest.mark.asyncio
 async def test_notify_collisions_resets_after_clear():
     """Test that notification flag resets after clear_all."""
     hass = MagicMock()

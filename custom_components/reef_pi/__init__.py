@@ -462,6 +462,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 await self.api.authenticate(self.username, self.password)
                 _LOGGER.debug("Authenticated")
 
+            # Rebuild topic mappings fresh each cycle so a changed registration (e.g.
+            # an ATO repointed to a different inlet) replaces the old one instead of
+            # colliding with a now-stale copy from a previous refresh.
+            self.mqtt_name_mapper.begin_refresh()
+
             await self.update_capabilities()
             await self.update_info()
             await self.update_temperature()

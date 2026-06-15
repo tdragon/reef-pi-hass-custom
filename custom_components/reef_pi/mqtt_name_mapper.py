@@ -58,7 +58,11 @@ class ReefPiMQTTNameMapper:
 
         # Track collisions: topic -> [(device_type, device_id), ...]
         self._collisions: dict[str, list[tuple[str, str]]] = {}
-        self._notified = False
+
+        # Collision topics already surfaced via persistent notification. Tracked as a
+        # set (not a bool) so a persisting collision is not re-notified every refresh,
+        # while a changed collision set still triggers a fresh notification.
+        self._notified_topics: set[str] = set()
 
     def _generate_topic(self, device_type: str, name: str) -> str:
         """Generate MQTT topic for device based on reef-pi's topic patterns.
@@ -175,11 +179,22 @@ class ReefPiMQTTNameMapper:
         # No collision, register topic
         self.topic_to_device[topic] = device
 
-    def clear_all(self) -> None:
-        """Clear all mappings and collisions (e.g., before refresh)."""
+    def begin_refresh(self) -> None:
+        """Reset per-refresh state before re-registering devices for a poll cycle.
+
+        Clears the topic mappings and collisions so a changed registration (e.g. an
+        ATO repointed to a different inlet) replaces the previous one instead of
+        colliding with a now-stale copy. The notified-collision set is preserved so a
+        persisting collision is not re-notified on every poll.
+        """
         self.topic_to_device.clear()
         self._collisions.clear()
-        self._notified = False
+
+    def clear_all(self) -> None:
+        """Clear all mappings, collisions and notification state (e.g., on reload)."""
+        self.topic_to_device.clear()
+        self._collisions.clear()
+        self._notified_topics.clear()
 
     def has_collisions(self) -> bool:
         """Check if any collisions were detected."""
@@ -190,12 +205,16 @@ class ReefPiMQTTNameMapper:
         notification_id = f"reef_pi_mqtt_collisions_{self.entry.entry_id}"
 
         if not self._collisions:
-            # No collisions, dismiss any existing notification
+            # No collisions, dismiss any existing notification and reset state so a
+            # future collision triggers a fresh notification.
             persistent_notification.async_dismiss(self.hass, notification_id)
+            self._notified_topics.clear()
             return
 
-        # Only notify once per reload
-        if self._notified:
+        # Skip re-notifying when the collision set is unchanged since the last notify
+        # (avoids spamming a notification on every poll while a collision persists).
+        current_topics = set(self._collisions.keys())
+        if current_topics == self._notified_topics:
             return
 
         # Build message listing all collisions
@@ -233,7 +252,7 @@ class ReefPiMQTTNameMapper:
             notification_id=notification_id,
         )
 
-        self._notified = True
+        self._notified_topics = current_topics
         _LOGGER.info(
             "MQTT topic collision notification created: %d topic(s) affected",
             len(self._collisions),
