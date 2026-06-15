@@ -59,10 +59,19 @@ class ReefPiMQTTNameMapper:
         # Track collisions: topic -> [(device_type, device_id), ...]
         self._collisions: dict[str, list[tuple[str, str]]] = {}
 
-        # Collision topics already surfaced via persistent notification. Tracked as a
-        # set (not a bool) so a persisting collision is not re-notified every refresh,
-        # while a changed collision set still triggers a fresh notification.
-        self._notified_topics: set[str] = set()
+        # Staging buffers used during a refresh cycle. While a refresh is in progress
+        # (_building is not None), registrations are written here and only swapped into
+        # the live maps on commit_refresh(), so a transient API failure leaves the last
+        # known-good mappings intact.
+        self._building: dict[str, tuple[str, str]] | None = None
+        self._building_collisions: dict[str, list[tuple[str, str]]] = {}
+
+        # Collisions already surfaced via persistent notification, keyed by a signature
+        # that includes the colliding devices (not just the topic). A persisting
+        # collision is not re-notified every refresh, while a changed collision set
+        # (different topics OR different devices on a topic) triggers a fresh
+        # notification.
+        self._notified_signature: dict[str, tuple[str, ...]] = {}
 
     def _generate_topic(self, device_type: str, name: str) -> str:
         """Generate MQTT topic for device based on reef-pi's topic patterns.
@@ -141,17 +150,26 @@ class ReefPiMQTTNameMapper:
         topic = self._generate_topic(topic_type or device_type, name)
         device = (device_type, device_id)
 
+        # Write into the staging buffer during a refresh, otherwise into the live maps
+        # directly (e.g. ad-hoc registrations outside a poll cycle).
+        if self._building is not None:
+            mapping = self._building
+            collisions = self._building_collisions
+        else:
+            mapping = self.topic_to_device
+            collisions = self._collisions
+
         # Check if topic already registered
-        if topic in self.topic_to_device:
-            existing_device = self.topic_to_device[topic]
+        if topic in mapping:
+            existing_device = mapping[topic]
 
             # Same device re-registered - idempotent, no action needed
             if existing_device == device:
                 return
 
             # First collision detected
-            del self.topic_to_device[topic]
-            self._collisions[topic] = [existing_device, device]
+            del mapping[topic]
+            collisions[topic] = [existing_device, device]
 
             _LOGGER.warning(
                 "MQTT topic collision: %s used by multiple devices: %s and %s",
@@ -162,39 +180,54 @@ class ReefPiMQTTNameMapper:
             return
 
         # Check if topic already in collisions
-        if topic in self._collisions:
+        if topic in collisions:
             # Check if this device already in collision list
-            if device in self._collisions[topic]:
+            if device in collisions[topic]:
                 return  # Already tracked
 
             # Additional collision
-            self._collisions[topic].append(device)
+            collisions[topic].append(device)
             _LOGGER.warning(
                 "MQTT topic collision: %s used by multiple devices: %s",
                 topic,
-                ", ".join(str(d) for d in self._collisions[topic]),
+                ", ".join(str(d) for d in collisions[topic]),
             )
             return
 
         # No collision, register topic
-        self.topic_to_device[topic] = device
+        mapping[topic] = device
 
     def begin_refresh(self) -> None:
-        """Reset per-refresh state before re-registering devices for a poll cycle.
+        """Start a fresh staging buffer for a poll cycle without touching live maps.
 
-        Clears the topic mappings and collisions so a changed registration (e.g. an
-        ATO repointed to a different inlet) replaces the previous one instead of
-        colliding with a now-stale copy. The notified-collision set is preserved so a
-        persisting collision is not re-notified on every poll.
+        Registrations issued until commit_refresh() are accumulated in a staging buffer.
+        The live topic mappings are left untouched so a transient API failure mid-cycle
+        (commit never reached) preserves the last known-good mappings, keeping MQTT
+        updates working. A successful refresh atomically replaces the live maps.
         """
-        self.topic_to_device.clear()
-        self._collisions.clear()
+        self._building = {}
+        self._building_collisions = {}
+
+    def commit_refresh(self) -> None:
+        """Atomically promote the staging buffer to the live maps after a good refresh.
+
+        The swap is a single synchronous assignment on the event loop, so the MQTT
+        callback (which reads topic_to_device) never observes a torn state.
+        """
+        if self._building is None:
+            return
+        self.topic_to_device = self._building
+        self._collisions = self._building_collisions
+        self._building = None
+        self._building_collisions = {}
 
     def clear_all(self) -> None:
         """Clear all mappings, collisions and notification state (e.g., on reload)."""
         self.topic_to_device.clear()
         self._collisions.clear()
-        self._notified_topics.clear()
+        self._building = None
+        self._building_collisions = {}
+        self._notified_signature.clear()
 
     def has_collisions(self) -> bool:
         """Check if any collisions were detected."""
@@ -208,13 +241,17 @@ class ReefPiMQTTNameMapper:
             # No collisions, dismiss any existing notification and reset state so a
             # future collision triggers a fresh notification.
             persistent_notification.async_dismiss(self.hass, notification_id)
-            self._notified_topics.clear()
+            self._notified_signature.clear()
             return
 
-        # Skip re-notifying when the collision set is unchanged since the last notify
-        # (avoids spamming a notification on every poll while a collision persists).
-        current_topics = set(self._collisions.keys())
-        if current_topics == self._notified_topics:
+        # Signature includes the colliding devices, not just the topic, so a changed
+        # device set on a stable topic still triggers a rewrite. Skip re-notifying only
+        # when the full signature is unchanged (avoids spamming on every poll).
+        current_signature = {
+            topic: tuple(sorted(str(d) for d in devices))
+            for topic, devices in self._collisions.items()
+        }
+        if current_signature == self._notified_signature:
             return
 
         # Build message listing all collisions
@@ -252,7 +289,7 @@ class ReefPiMQTTNameMapper:
             notification_id=notification_id,
         )
 
-        self._notified_topics = current_topics
+        self._notified_signature = current_signature
         _LOGGER.info(
             "MQTT topic collision notification created: %d topic(s) affected",
             len(self._collisions),

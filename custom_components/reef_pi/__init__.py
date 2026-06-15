@@ -462,9 +462,11 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
                 await self.api.authenticate(self.username, self.password)
                 _LOGGER.debug("Authenticated")
 
-            # Rebuild topic mappings fresh each cycle so a changed registration (e.g.
-            # an ATO repointed to a different inlet) replaces the old one instead of
-            # colliding with a now-stale copy from a previous refresh.
+            # Rebuild topic mappings into a staging buffer each cycle so a changed
+            # registration (e.g. an ATO repointed to a different inlet) replaces the old
+            # one instead of colliding with a now-stale copy. The live maps are only
+            # swapped on commit_refresh() after a successful refresh, so a transient API
+            # failure mid-cycle keeps the last known-good mappings.
             self.mqtt_name_mapper.begin_refresh()
 
             await self.update_capabilities()
@@ -480,9 +482,10 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
             await self.update_macros()
             await self.update_timers()
 
-            # Check for MQTT name collisions and notify if any
-            if self.mqtt_name_mapper:
-                self.mqtt_name_mapper.notify_collisions()
+            # All updates succeeded - commit the staged mappings atomically, then
+            # check for MQTT name collisions and notify if any.
+            self.mqtt_name_mapper.commit_refresh()
+            self.mqtt_name_mapper.notify_collisions()
         except InvalidAuth as error:
             raise ConfigEntryAuthFailed from error
         except CannotConnect as error:
