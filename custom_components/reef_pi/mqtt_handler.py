@@ -92,6 +92,13 @@ class ReefPiMQTTHandler:
                 _LOGGER.debug("Updated equipment %s to %s", device_id, state)
                 updated = True
 
+        elif device_type == "inlet":
+            if device_id in self.coordinator.inlets:
+                state = bool(int(value))
+                self.coordinator.inlets[device_id]["state"] = state
+                _LOGGER.debug("Updated inlet %s to %s", device_id, state)
+                updated = True
+
         if updated:
             if self.coordinator.mqtt_tracker:
                 self.coordinator.mqtt_tracker.record_mqtt_update(device_type, device_id)

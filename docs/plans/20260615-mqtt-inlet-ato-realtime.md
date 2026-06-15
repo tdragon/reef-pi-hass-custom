@@ -148,18 +148,18 @@
 - Modify: `custom_components/reef_pi/mqtt_handler.py`
 - Modify: `tests/test_mqtt_handler.py`
 
-- [ ] add an `elif device_type == "inlet":` branch in `_update_device_state` that sets
+- [x] add an `elif device_type == "inlet":` branch in `_update_device_state` that sets
       `coordinator.inlets[device_id]["state"] = bool(int(value))` and `updated = True`
       (guard `device_id in self.coordinator.inlets`), with a debug log
-- [ ] confirm the existing tracker recording + `async_set_updated_data` path covers `"inlet"`
+- [x] confirm the existing tracker recording + `async_set_updated_data` path covers `"inlet"`
       (no extra change expected)
-- [ ] extend `MockCoordinator` in `tests/test_mqtt_handler.py` with `self.inlets = {"2": {"state": False}}`
+- [x] extend `MockCoordinator` in `tests/test_mqtt_handler.py` with `self.inlets = {"2": {"state": False}}`
       and register `reef-pi/ato_test_ato_state → ("inlet", "2")` — the hand-registered topic string
       must equal `_generate_topic("ato", "Test ATO")` so Task 1 and Task 2 assert the same topic
-- [ ] write test: inlet state goes True on payload `"1.000000"` and `async_set_updated_data` called
-- [ ] write test: inlet state goes False on payload `"0.000000"`
-- [ ] write test: unknown inlet id is a no-op (no update, no crash)
-- [ ] run tests — must pass before Task 2
+- [x] write test: inlet state goes True on payload `"1.000000"` and `async_set_updated_data` called
+- [x] write test: inlet state goes False on payload `"0.000000"`
+- [x] write test: unknown inlet id is a no-op (no update, no crash)
+- [x] run tests — must pass before Task 2
 
 ### Task 2: Register ATO-state → inlet mapping; drop the phantom inlet topic
 

@@ -18,6 +18,7 @@ class MockCoordinator:
         self.tcs = {"1": {"temperature": 0.0}}
         self.equipment = {"1": {"state": False}}
         self.ph = {"1": {"value": 0.0}}
+        self.inlets = {"2": {"state": False}}
         self.mqtt_tracker = ReefPiMQTTTracker()
         self.data = {}
         self.async_set_updated_data = Mock()
@@ -37,6 +38,15 @@ class MockCoordinator:
             "1",
         )
         self.mqtt_name_mapper.topic_to_device["reef-pi/ph_ph"] = ("ph", "1")
+        # ATO state topic maps to the inlet id (must match _generate_topic("ato", "Test ATO"))
+        assert (
+            self.mqtt_name_mapper._generate_topic("ato", "Test ATO")
+            == "reef-pi/ato_test_ato_state"
+        )
+        self.mqtt_name_mapper.topic_to_device["reef-pi/ato_test_ato_state"] = (
+            "inlet",
+            "2",
+        )
 
 
 @pytest.fixture
@@ -109,6 +119,52 @@ async def test_mqtt_message_received_equipment_off(mqtt_handler, mock_coordinato
 
     assert mock_coordinator.equipment["1"]["state"] is False
     assert mock_coordinator.async_set_updated_data.called
+
+
+@pytest.mark.asyncio
+async def test_mqtt_message_received_inlet_on(mqtt_handler, mock_coordinator):
+    """Test receiving inlet on MQTT message via ATO state topic."""
+    msg = ReceiveMessage(
+        topic="reef-pi/ato_test_ato_state",
+        payload="1.000000",
+        qos=0,
+        retain=False,
+        subscribed_topic="reef-pi/#",
+        timestamp=0.0,
+    )
+
+    mqtt_handler._mqtt_message_received(msg)
+
+    assert mock_coordinator.inlets["2"]["state"] is True
+    assert mock_coordinator.async_set_updated_data.called
+
+
+@pytest.mark.asyncio
+async def test_mqtt_message_received_inlet_off(mqtt_handler, mock_coordinator):
+    """Test receiving inlet off MQTT message via ATO state topic."""
+    mock_coordinator.inlets["2"]["state"] = True
+    msg = ReceiveMessage(
+        topic="reef-pi/ato_test_ato_state",
+        payload="0.000000",
+        qos=0,
+        retain=False,
+        subscribed_topic="reef-pi/#",
+        timestamp=0.0,
+    )
+
+    mqtt_handler._mqtt_message_received(msg)
+
+    assert mock_coordinator.inlets["2"]["state"] is False
+    assert mock_coordinator.async_set_updated_data.called
+
+
+@pytest.mark.asyncio
+async def test_update_device_state_unknown_inlet(mqtt_handler, mock_coordinator):
+    """Test updating state for unknown inlet id is a no-op."""
+    mqtt_handler._update_device_state("inlet", "999", 1.0)
+
+    assert "999" not in mock_coordinator.inlets
+    assert not mock_coordinator.async_set_updated_data.called
 
 
 @pytest.mark.asyncio
