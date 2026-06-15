@@ -218,12 +218,21 @@
 - [x] run tests — must pass before Task 5
 
 ### Task 5: Verify acceptance criteria
-- [ ] verify the end-to-end flow logic: `ato_<name>_state` → inlet binary_sensor updates (covered by
-      Task 1 + Task 2 unit tests)
-- [ ] verify standalone inlets and macro-based ATOs are handled (no crash, no phantom topic)
-- [ ] run full suite: `uv run pytest`
-- [ ] run `uv run ruff check --fix` and `uv run ruff format`
-- [ ] run `uv run pyright` — no new errors
+- [x] verify the end-to-end flow logic: `ato_<name>_state` → inlet binary_sensor updates (covered by
+      Task 1 + Task 2 unit tests) — Task 1 `tests/test_mqtt_handler.py`
+      (`test_mqtt_message_received_inlet_on/off`, `test_update_device_state_unknown_inlet`) +
+      Task 2 `tests/test_mqtt_name_mapper.py` (`test_add_ato_state_maps_to_inlet`,
+      `test_update_atos_registers_ato_state`); both assert the same topic string
+      `reef-pi/ato_test_ato_state` == `_generate_topic("ato", "Test ATO")` → `("inlet", "2")`
+- [x] verify standalone inlets and macro-based ATOs are handled (no crash, no phantom topic) —
+      macro ATO skip: `test_update_atos_skips_macro_ato` (empty `inlet` → no `add_ato_state`, empty
+      `topic_to_device`); standalone inlet (no ATO): `test_inlet_polled_without_ato` (inlets populate
+      with `has_ato=False`); `update_inlets` no longer calls `add_inlet` so no phantom topic
+- [x] run full suite: `uv run pytest` — 91 passed
+- [x] run `uv run ruff check --fix` and `uv run ruff format` — clean (All checks passed!; 28 files unchanged)
+- [x] run `uv run pyright` — no new errors (changed files: 0 errors / 9 warnings on both master
+      baseline and this branch — identical pre-existing `unique_id` CoordinatorEntity warnings in
+      sensor.py; no new errors/warnings introduced)
 
 ### Task 6: [Final] Update documentation
 - [ ] update `CLAUDE.md` MQTT section: ATO `_state` drives the inlet binary_sensor in real time;
