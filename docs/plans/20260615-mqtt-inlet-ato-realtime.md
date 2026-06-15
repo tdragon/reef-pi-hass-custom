@@ -211,11 +211,11 @@
 - Modify: `custom_components/reef_pi/sensor.py`
 - Modify: `tests/test_mqtt_sensors.py`
 
-- [ ] add `ReefPiMQTTLastUpdateSensor(coordinator, "inlet")` to the `diagnostic_sensors` list
-- [ ] write test: the inlet diagnostic sensor is created when MQTT is enabled with name
+- [x] add `ReefPiMQTTLastUpdateSensor(coordinator, "inlet")` to the `diagnostic_sensors` list
+- [x] write test: the inlet diagnostic sensor is created when MQTT is enabled with name
       "MQTT Last Inlet Update" (`.title()` of `"inlet"`)
-- [ ] write test: it returns the tracker's last `"inlet"` update timestamp after an inlet MQTT update
-- [ ] run tests — must pass before Task 5
+- [x] write test: it returns the tracker's last `"inlet"` update timestamp after an inlet MQTT update
+- [x] run tests — must pass before Task 5
 
 ### Task 5: Verify acceptance criteria
 - [ ] verify the end-to-end flow logic: `ato_<name>_state` → inlet binary_sensor updates (covered by

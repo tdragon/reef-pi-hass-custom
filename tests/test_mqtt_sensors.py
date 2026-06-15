@@ -1,5 +1,7 @@
 """Test MQTT diagnostic sensors for Reef-Pi integration."""
 
+from datetime import datetime, timezone
+
 import pytest
 import respx
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -79,6 +81,7 @@ async def test_mqtt_sensors_created_when_enabled(hass, async_api_mock_mqtt_enabl
     assert hass.states.get("sensor.reef_pi_mqtt_last_temperature_update") is not None
     assert hass.states.get("sensor.reef_pi_mqtt_last_equipment_update") is not None
     assert hass.states.get("sensor.reef_pi_mqtt_last_ph_update") is not None
+    assert hass.states.get("sensor.reef_pi_mqtt_last_inlet_update") is not None
 
 
 async def test_mqtt_status_sensor_disabled(hass, async_api_mock_instance):
@@ -190,6 +193,52 @@ async def test_mqtt_last_update_sensors(hass, async_api_mock_mqtt_enabled):
     ph_state = hass.states.get("sensor.reef_pi_mqtt_last_ph_update")
     assert ph_state is not None
     assert ph_state.name == "Reef PI MQTT Last Ph Update"
+
+    inlet_state = hass.states.get("sensor.reef_pi_mqtt_last_inlet_update")
+    assert inlet_state is not None
+    assert inlet_state.name == "Reef PI MQTT Last Inlet Update"
+
+
+async def test_mqtt_last_inlet_update_reflects_tracker(
+    hass, async_api_mock_mqtt_enabled
+):
+    """Test the inlet diagnostic sensor returns the tracker's last inlet timestamp."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            "host": async_api_mock.REEF_MOCK_URL,
+            "username": async_api_mock.REEF_MOCK_USER,
+            "password": async_api_mock.REEF_MOCK_PASSWORD,
+            "verify": False,
+            "mqtt_prefix": "reef-pi",
+            "mqtt_available": True,
+        },
+        options={
+            "mqtt_enabled": True,
+        },
+    )
+
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # No inlet MQTT messages yet -> sensor has no timestamp
+    inlet_state = hass.states.get("sensor.reef_pi_mqtt_last_inlet_update")
+    assert inlet_state is not None
+    assert inlet_state.state == "unknown"
+
+    # Record an inlet MQTT update on the coordinator's tracker
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    timestamp = datetime(2026, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+    coordinator.mqtt_tracker.record_mqtt_update("inlet", "2", timestamp)
+
+    # Propagate the update so entities re-render
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+
+    inlet_state = hass.states.get("sensor.reef_pi_mqtt_last_inlet_update")
+    assert inlet_state is not None
+    assert inlet_state.state == timestamp.isoformat()
 
 
 async def test_mqtt_sensor_names(hass, async_api_mock_mqtt_enabled):
