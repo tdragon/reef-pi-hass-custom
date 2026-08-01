@@ -87,7 +87,7 @@ def mock_ph6(mock, url=REEF_MOCK_URL):
     mock.get(f"{url}/api/phprobes/6/read").respond(200, json={"value": 6.66})
 
 
-def mock_info(mock, url=REEF_MOCK_URL):
+def mock_info(mock, url=REEF_MOCK_URL, cpu_temperature="39.0'C\n"):
     mock.get(f"{url}/api/info").respond(
         200,
         json={
@@ -95,7 +95,7 @@ def mock_info(mock, url=REEF_MOCK_URL):
             "ip": "192.168.1.123",
             "current_time": "Sat Jun 12 22:05:32",
             "uptime": "1 week ago",
-            "cpu_temperature": "39.0'C\n",
+            "cpu_temperature": cpu_temperature,
             "version": "4.1",
             "model": "Raspberry Pi 2 Model B Rev 1.1\x00",
         },
@@ -194,10 +194,11 @@ def mock_all(
     has_ato_usage=True,
     has_ato=True,
     has_inlets=False,
+    cpu_temperature="39.0'C\n",
 ):
     mock_signin(mock)
     mock_capabilities(mock, ato=has_ato)
-    mock_info(mock)
+    mock_info(mock, cpu_temperature=cpu_temperature)
     mock_telemetry(mock)
     mock_phprobes(mock)
     mock_ph6(mock)

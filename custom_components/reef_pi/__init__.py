@@ -203,8 +203,17 @@ class ReefPiDataUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Fetching info")
         info = await self.api.info()
         if info:
-            info["cpu_temperature"] = float(info["cpu_temperature"].split("'")[0])
-            info["model"] = info["model"].rstrip("\0")
+            # reef-pi reports "unknown" when vcgencmd fails and "" on non-Pi hardware.
+            # Degrade the diagnostic sensor instead of aborting the whole setup.
+            raw_cpu_temperature = info.get("cpu_temperature")
+            try:
+                info["cpu_temperature"] = float(raw_cpu_temperature.split("'")[0])
+            except (AttributeError, ValueError):
+                _LOGGER.debug(
+                    "cpu_temperature unavailable from reef-pi: %r", raw_cpu_temperature
+                )
+                info["cpu_temperature"] = None
+            info["model"] = (info.get("model") or "").rstrip("\0")
             info["capabilities"] = self.capabilities
             _LOGGER.debug("Basic info: ok")
             self.info = info

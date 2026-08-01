@@ -1,6 +1,7 @@
 """Test Ph sensor for Reef_Pi integration."""
 
 from homeassistant.components.mqtt.models import ReceiveMessage
+from homeassistant.config_entries import ConfigEntryState
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.reef_pi import DOMAIN
@@ -39,6 +40,41 @@ async def test_sensors(hass, async_api_mock_instance):
     assert state.state == "39.0"
     assert state.name == "Reef PI"
     assert state.attributes["unit_of_measurement"] == "°C"
+
+
+@pytest.mark.parametrize("cpu_temperature", ["unknown", ""])
+async def test_unreadable_cpu_temperature(hass, cpu_temperature):
+    """reef-pi reports "unknown" when vcgencmd fails and "" on non-Pi hardware.
+
+    Neither may abort setup and take every other entity down with it (issue #75).
+    """
+    with respx.mock(assert_all_called=False) as mock:
+        async_api_mock.mock_all(mock, cpu_temperature=cpu_temperature)
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "host": async_api_mock.REEF_MOCK_URL,
+                "username": async_api_mock.REEF_MOCK_USER,
+                "password": async_api_mock.REEF_MOCK_PASSWORD,
+                "verify": False,
+            },
+        )
+
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert entry.state is ConfigEntryState.LOADED
+
+        # Only the temperature reading degrades: the entity stays available and
+        # keeps exposing the rest of the info payload.
+        state = hass.states.get("sensor.reef_pi")
+        assert state
+        assert state.state == "unknown"
+        assert state.attributes["version"] == "4.1"
+
+        # Unrelated entities are unaffected.
+        assert hass.states.get("sensor.reef_pi_temp").state == "25.0"
 
 
 async def test_temperature_sensor(hass, async_api_mock_instance):
