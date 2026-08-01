@@ -234,45 +234,35 @@ These sensors help monitor MQTT connectivity and troubleshoot issues.
 
 ## Version Management & Releases
 
-Current version: 0.4.1 (maintained in both pyproject.toml and manifest.json)
+The version is maintained in `pyproject.toml`, `custom_components/reef_pi/manifest.json`
+and the project entry in `uv.lock`. Keep all three in sync — `uv lock` updates the last one.
+
+**The version line is 4.x, not 0.x.** The 0.4.5 bump was tagged `v4.0.5` with the digits
+transposed, and that release is published. HACS orders by release tag, so anything starting
+with `0.` now sorts below the current release and would never be offered as an update.
+Continue from 4.0.x.
 
 ### Creating a Release
 
-The project uses an automated release workflow triggered by git tags:
+1. **Bump the version.** Run the `Bump & PR Version` workflow (`bump-version.yml`,
+   `workflow_dispatch`): it increments the last segment of the `pyproject.toml` version,
+   mirrors it into `manifest.json`, and opens a `chore: bump version X.Y.Z` PR. It can only
+   produce a patch bump of whatever the file currently says — for anything else, edit the
+   files by hand. It does not touch `uv.lock`.
+2. **Merge** the bump PR.
+3. **Tag master:** `git tag vX.Y.Z && git push origin vX.Y.Z`.
+4. **Promote the release.** See below — the workflow always marks it as a prerelease.
 
-```bash
-# Semantic version bump (recommended)
-./scripts/release.sh patch    # 0.4.1 → 0.4.2
-./scripts/release.sh minor    # 0.4.1 → 0.5.0
-./scripts/release.sh major    # 0.4.1 → 1.0.0
+**What the tag triggers** (`release.yml`, on `v*.*.*`):
+1. Runs pytest and hassfest; the release is skipped if either fails
+2. `scripts/prepare_release.sh` zips `custom_components/reef_pi/` into `output/reef_pi.zip`
+3. Creates the GitHub release with auto-generated notes and the zip attached
 
-# Explicit version
-./scripts/release.sh 0.5.0
-```
+**Manual step after every release:** the workflow hardcodes `prerelease: true`, so the release
+must be un-marked as a prerelease by hand or HACS will not serve it as a stable update.
 
-**What the script does:**
-1. Updates version in `pyproject.toml` and `custom_components/reef_pi/manifest.json`
-2. Creates a commit: `chore: release vX.Y.Z`
-3. Creates and pushes a git tag: `vX.Y.Z`
-4. Pushes everything to GitHub
-
-**What happens automatically on GitHub:**
-1. GitHub Actions workflow triggers on tag push
-2. Runs full test suite (pytest + hassfest)
-3. Builds `reef_pi.zip` package
-4. Creates GitHub release (marked as prerelease)
-5. Attaches zip file as release asset
-6. Auto-generates release notes from commits
-
-**Prerequisites:**
-- All changes must be committed before running release script
-- Should be on `master` branch (script will warn if not)
-- Tests should pass locally before releasing
-
-**Notes:**
-- Release script validates version format and checks for duplicate tags
-- If tests fail on GitHub, the release will not be created
-- All releases are marked as prerelease by default
+There is no `scripts/release.sh`. The only script is `scripts/prepare_release.sh`, which just
+builds the zip and is called by the workflow.
 
 ## Known Issues
 
